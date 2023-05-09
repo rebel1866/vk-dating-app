@@ -1,6 +1,7 @@
 package com.melnikov.dao.model.constant;
 
 public enum PeopleMain {
+    N0(""),
     N1("Ум и креативность"),
     N2("Доброта и честность"),
     N3("Красота и здоровье"),

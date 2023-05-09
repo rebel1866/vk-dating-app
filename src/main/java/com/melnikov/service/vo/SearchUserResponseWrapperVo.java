@@ -1,13 +1,13 @@
 package com.melnikov.service.vo;
 
-public class SearchUserResponseWrapperVo {
-    private SearchUserResponseVo response;
+public class SearchUserResponseWrapperVo<T> {
+    private SearchUserResponseVo<T> response;
 
-    public SearchUserResponseVo getResponse() {
+    public SearchUserResponseVo<T> getResponse() {
         return response;
     }
 
-    public void setResponse(SearchUserResponseVo response) {
+    public void setResponse(SearchUserResponseVo<T> response) {
         this.response = response;
     }
 }

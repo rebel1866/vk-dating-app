@@ -1,10 +1,5 @@
 package com.melnikov.dao.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.melnikov.service.vo.CareerVo;
-import com.melnikov.service.vo.CityVo;
-import com.melnikov.service.vo.LastSeenVo;
-import com.melnikov.service.vo.PersonalVo;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;

@@ -4,9 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SearchUserResponseVo {
+public class SearchUserResponseVo<T> {
     private Integer count;
-    private List<UserVo> items;
+    private List<T> items;
 
     public Integer getCount() {
         return count;
@@ -16,11 +16,11 @@ public class SearchUserResponseVo {
         this.count = count;
     }
 
-    public List<UserVo> getItems() {
+    public List<T> getItems() {
         return items;
     }
 
-    public void setItems(List<UserVo> items) {
+    public void setItems(List<T> items) {
         this.items = items;
     }
 }

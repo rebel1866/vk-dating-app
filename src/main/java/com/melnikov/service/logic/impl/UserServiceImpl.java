@@ -1,14 +1,16 @@
 package com.melnikov.service.logic.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.melnikov.dao.model.Photo;
 import com.melnikov.dao.model.User;
+import com.melnikov.dao.model.constant.Relation;
 import com.melnikov.dao.repository.UserRepository;
 import com.melnikov.service.constant.VkDatingAppConstants;
 import com.melnikov.service.dto.UserDto;
 import com.melnikov.service.exception.ServiceException;
 import com.melnikov.service.logic.UserService;
-import com.melnikov.service.vo.ApiSearchRequestVo;
-import com.melnikov.service.vo.SearchUserResponseWrapperVo;
-import com.melnikov.service.vo.UserVo;
+import com.melnikov.service.vo.*;
+import com.melnikov.util.DateUtil;
 import com.melnikov.util.HttpClient;
 import com.melnikov.util.JsonParser;
 import com.melnikov.util.converter.UserVoToModelConverter;
@@ -17,11 +19,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.time.DateTimeException;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.Period;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,7 +30,8 @@ import java.util.stream.Collectors;
 @Service
 public class UserServiceImpl implements UserService {
 
-    private JsonParser<SearchUserResponseWrapperVo> jsonParser;
+    private JsonParser<SearchUserResponseWrapperVo<UserVo>> jsonParserUsers;
+    private JsonParser<SearchUserResponseWrapperVo<PhotoVo>> jsonParserPhotos;
     private UserRepository userRepository;
     @Value("${basic.age.from}")
     private Byte basicAgeFrom;
@@ -39,10 +39,17 @@ public class UserServiceImpl implements UserService {
     private Byte basicAgeTo;
     @Value("${amount.days.last.seen}")
     private Short amountDaysLastSeen;
+    @Value("${photos.basic.amount}")
+    private Byte photosBasicAmount;
 
     @Autowired
-    public void setJsonParser(JsonParser<SearchUserResponseWrapperVo> jsonParser) {
-        this.jsonParser = jsonParser;
+    public void setJsonParserUsers(JsonParser<SearchUserResponseWrapperVo<UserVo>> jsonParserUsers) {
+        this.jsonParserUsers = jsonParserUsers;
+    }
+
+    @Autowired
+    public void setJsonParserPhotos(JsonParser<SearchUserResponseWrapperVo<PhotoVo>> jsonParserPhotos) {
+        this.jsonParserPhotos = jsonParserPhotos;
     }
 
     @Autowired
@@ -63,19 +70,22 @@ public class UserServiceImpl implements UserService {
             params.put("birth_day", requestVo.getBirthDay().toString());
             params.put("birth_month", requestVo.getBirthMonth().toString());
             String response;
-            SearchUserResponseWrapperVo responseWrapperVO;
+            SearchUserResponseWrapperVo<UserVo> responseWrapperVO;
             try {
                 response = HttpClient.sendPOST("https://api.vk.com/method/users.search", params);
-                responseWrapperVO = jsonParser.parseJson(response, SearchUserResponseWrapperVo.class);
+                responseWrapperVO = jsonParserUsers.parseJson(response, new TypeReference<>() {
+                });
             } catch (IOException e) {
                 // logger
                 throw new ServiceException(e.getMessage());
             }
             List<UserVo> currentUsersVo = responseWrapperVO.getResponse().getItems();
-            List<UserVo> basicCriteriaUsersVo = filterUsersBasicCriteria(currentUsersVo);
+            List<UserVo> basicCriteriaUsersVo = filterUsersBasicCriteria(currentUsersVo); //also take those accs are currently closed
             List<User> usersWithPhotos = basicCriteriaUsersVo.stream().map(UserVoToModelConverter::convert).
                     collect(Collectors.toList());
-            usersWithPhotos.forEach(this::setPhotos);
+            for (User user : usersWithPhotos) {
+                setPhotos(user, accessToken);
+            }
             userRepository.saveAll(usersWithPhotos);
             List<User> usersListForCurrentView = filterUsersForCurrentView(usersWithPhotos, ageFrom, ageTo, city);
             userList.addAll(usersListForCurrentView);
@@ -85,8 +95,40 @@ public class UserServiceImpl implements UserService {
         return new ArrayList<>();
     }
 
-    private void setPhotos(User user) {
-        user.setPhotos(new ArrayList<>());
+    private void setPhotos(User user, String accessToken) throws ServiceException {
+        String response;
+        SearchUserResponseWrapperVo<PhotoVo> responseWrapperVO;
+        Map<String, String> params = new HashMap<>();
+        params.put("owner_id", user.getId().toString());
+        params.put("access_token", accessToken);
+        params.put("v", VkDatingAppConstants.API_VERSION);
+        try {
+            response = HttpClient.sendPOST("https://api.vk.com/method/photos.getAll", params);
+            responseWrapperVO = jsonParserPhotos.parseJson(response, new TypeReference<>() {
+            });
+        } catch (IOException e) {
+            // logger
+            throw new ServiceException(e.getMessage());
+        }
+        List<PhotoVo> photoVoList = responseWrapperVO.getResponse().getItems();
+        List<Photo> photoList = new ArrayList<>();
+        for (int i = 0; i < photoVoList.size(); i++) {
+            if (i == photosBasicAmount) {
+                break;
+            }
+            PhotoVo photoVo = photoVoList.get(i);
+            Photo photo = new Photo();
+            photo.setDateTime(DateUtil.unixToLocalDateTime(photoVo.getDate()));
+            for (SizeVo sizeVo : photoVo.getSizes()) {
+                String type = "x";
+                if (type.equals(sizeVo.getType())) {
+                    photo.setUrl(sizeVo.getUrl());
+                    break;
+                }
+            }
+            photoList.add(photo);
+        }
+        user.setPhotos(photoList);
     }
 
     private ApiSearchRequestVo getRequestVo() {
@@ -105,9 +147,9 @@ public class UserServiceImpl implements UserService {
                     long timeLastSeenUnix = el.getLastSeen().getTime();
                     return (unixTimeNow - timeLastSeenUnix) <= (amountDaysLastSeen * 24 * 60 * 60);
                 }).
-                filter(el -> el.getRelation() != null && !el.getRelation().equals(2) //enum
-                        && !el.getRelation().equals(3) && !el.getRelation().equals(4)
-                        && !el.getRelation().equals(7) && !el.getRelation().equals(8)).
+                filter(el -> el.getRelation() != null && !el.getRelation().equals(Relation.N2.getNumber())
+                        && !el.getRelation().equals(Relation.N3.getNumber()) && !el.getRelation().equals(Relation.N4.getNumber())
+                        && !el.getRelation().equals(Relation.N7.getNumber()) && !el.getRelation().equals(Relation.N8.getNumber())).
                 toList();
     }
 
@@ -115,15 +157,10 @@ public class UserServiceImpl implements UserService {
         List<User> userListToView = new ArrayList<>();
         if (ageFrom != null && ageTo != null) {
             userListToView = users.stream().filter(el -> {
-                if (el.getBdate() == null) {
-                    return false;
-                }
-                DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
                 try {
-                    LocalDate birthDate = LocalDate.parse(el.getBdate(), dateTimeFormatter);
-                    int age = Math.abs(Period.between(LocalDate.now(), birthDate).getYears());
+                    int age = DateUtil.parseAge(el.getBdate());
                     return ageFrom > age && ageTo < age;
-                } catch (DateTimeParseException e) {
+                } catch (DateTimeException e) {
                     return false;
                 }
             }).collect(Collectors.toList());
