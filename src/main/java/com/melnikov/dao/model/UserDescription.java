@@ -29,6 +29,6 @@ public class UserDescription {
     private String alcohol;
     private String inspiredBy;
     private String lifeMain;
-    private String relation; //upd
+    private String relation;
     private List<Career> careers;
 }

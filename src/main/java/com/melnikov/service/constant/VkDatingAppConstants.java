@@ -7,4 +7,5 @@ public class VkDatingAppConstants {
     public static final String API_VERSION = "5.131";
     public static final Byte SEX = 1;
     public static final Byte COUNTRY_ID = 3;
+    public static final Short COUNT = 1000;
 }

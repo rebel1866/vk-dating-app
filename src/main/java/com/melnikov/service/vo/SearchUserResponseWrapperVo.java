@@ -1,5 +1,8 @@
 package com.melnikov.service.vo;
 
+import lombok.ToString;
+
+@ToString
 public class SearchUserResponseWrapperVo<T> {
     private SearchUserResponseVo<T> response;
 

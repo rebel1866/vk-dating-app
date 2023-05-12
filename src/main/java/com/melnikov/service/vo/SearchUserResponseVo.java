@@ -1,9 +1,11 @@
 package com.melnikov.service.vo;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.ToString;
 
 import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
+@ToString
 public class SearchUserResponseVo<T> {
     private Integer count;
     private List<T> items;

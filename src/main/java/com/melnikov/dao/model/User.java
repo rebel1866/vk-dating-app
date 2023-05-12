@@ -13,7 +13,7 @@ import java.util.List;
 @Getter
 @Setter
 @Builder
-@Document("users")
+@Document(collection = "users")
 public class User {
     @Id
     private Long id;
