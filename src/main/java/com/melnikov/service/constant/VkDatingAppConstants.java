@@ -8,4 +8,7 @@ public class VkDatingAppConstants {
     public static final Byte SEX = 1;
     public static final Byte COUNTRY_ID = 3;
     public static final Short COUNT = 1000;
+    public static final String ACCESS_TOKEN = "vk1.a.Smf66zxb730o8G7bW2CCaO2q_JGGZGuqBFKntjiJGeFz1gvxxZJwfasiCQo765W-" +
+            "pW7A2BsBLrWtYdIjCoEuwg5aci-YEzqm5w6cdCpPOIWZEh-qzUNb6q7hvj2EL4f5-gb-THlAu9VKZw-Lkd59sqO4xPIIAa16nCos6yIi" +
+            "WQv6098anJNrJ5dZbcg26OyCz0gi8j41zpZG6CghYbu3uw";
 }

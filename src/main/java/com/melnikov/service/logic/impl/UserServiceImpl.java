@@ -24,12 +24,10 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -76,27 +74,20 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void startIndexing(Integer amount, String accessToken, Integer tokenExpires) {
+    public void startIndexing(Integer amount) {
         ExecutorService executorService = Executors.newSingleThreadExecutor();
-        executorService.submit(() -> runIndexing(amount, accessToken, tokenExpires));
+        executorService.submit(() -> runIndexing(amount));
     }
 
-    private void runIndexing(Integer amount, String accessToken, Integer tokenExpires) {
+    private void runIndexing(Integer amount) {
         Map<String, String> params = new HashMap<>();
         initParams(params);
-        params.put("access_token", accessToken);
-        LocalDateTime expireTime = LocalDateTime.now().plusSeconds(tokenExpires - 300);
         List<User> userList = new ArrayList<>();
         isContinue.set(true);
         int currentIteration = -1;
-        Map<Integer, String> executionJournal = new HashMap<>();
+        Map<Integer, ExecutionRecord> executionJournal = new LinkedHashMap<>();
         while (checkLoopCriteria(amount, userList)) {
             currentIteration++;
-            LocalDateTime now = LocalDateTime.now();
-            if (expireTime.isBefore(now)) {
-                logger.info("Token has expired");
-                break;
-            }
             ApiSearchRequestVo requestVo;
             try {
                 requestVo = nameService.getRequestVo();
@@ -111,18 +102,16 @@ public class UserServiceImpl implements UserService {
             String response;
             SearchUserResponseWrapperVo<UserVo> responseWrapperVO;
             logger.info("Sending request.");
-            logger.info(params.toString());
             try {
                 response = HttpClient.sendPOST("https://api.vk.com/method/users.search", params);
                 logger.info("Got response. Parsing.");
-                logger.info(response);
                 response = response.replaceAll("personal\":\\[\\]", "personal\":{}");
                 responseWrapperVO = jsonParserUsers.parseJson(response, new TypeReference<>() {
                 });
                 logger.info("Successfully parsed json.");
             } catch (IOException e) {
                 logger.error("Error while making request and parsing it: " + e.getMessage());
-                executionJournal.put(currentIteration, "Fail");
+                executionJournal.put(currentIteration, new ExecutionRecord(false, null, 0, requestVo));
                 boolean isThreeOneAfterAnother = isThreeErrorsOneAfterAnother(currentIteration, executionJournal);
                 if (isThreeOneAfterAnother) {
                     logger.error("3 errors one after another - stopping execution.");
@@ -131,18 +120,27 @@ public class UserServiceImpl implements UserService {
                 continue;
             }
             List<UserVo> currentUsersVo = responseWrapperVO.getResponse().getItems();
-            logger.info("currentUsersVo size: " + currentUsersVo.size());
+            if (currentUsersVo.size() == 0) {
+                logger.info("Empty response hsa been detected.");
+                executionJournal.put(currentIteration, new ExecutionRecord(false, true,
+                        0, requestVo));
+                continue;
+            }
+            logger.info("found users: " + currentUsersVo.size());
             List<UserVo> basicCriteriaUsersVo = filterUsersBasicCriteria(currentUsersVo);
-            logger.info("Filtered currentUsersVo by basic criterias, result list size: " + basicCriteriaUsersVo.size());
+            logger.info("Filtered currentUsersVo by basic criterias, amount: " + basicCriteriaUsersVo.size());
             //also take those accs are currently closed and write to db
             List<User> usersWithPhotos = basicCriteriaUsersVo.stream().map(UserVoToModelConverter::convert).
                     collect(Collectors.toList());
+            List<String> comments = new ArrayList<>();
             for (User user : usersWithPhotos) {
                 try {
-                    setPhotos(user, accessToken);
-                } catch (ServiceException e) {
+                    setPhotos(user);
+                    TimeUnit.MILLISECONDS.sleep(500);
+                } catch (ServiceException | InterruptedException e) {
                     logger.error(String.format("Error while trying to set photos for user with id %s : %s",
                             user.getId(), e.getMessage()));
+                    comments.add("Failed to set photos for user with id: " + user.getId());
                     user.setPhotos(new ArrayList<>());
                 }
             }
@@ -153,17 +151,33 @@ public class UserServiceImpl implements UserService {
             logger.info("Saved all.");
             userList.addAll(usersWithPhotos);
             logger.info("Target user list size: " + userList.size());
-            executionJournal.put(currentIteration, "Success");
+            executionJournal.put(currentIteration, new ExecutionRecord(true, false,
+                    usersWithPhotos.size(), requestVo, comments));
+            logger.info("Current iteration: " + currentIteration);
         }
+        StringBuilder executionInfo = new StringBuilder();
+        executionInfo.append("\n");
+        executionJournal.forEach((key, value) -> {
+            executionInfo.append("Iteration: ").append(key);
+            executionInfo.append("\n");
+            executionInfo.append(value.toString());
+            executionInfo.append("\n");
+        });
+        logger.info(executionInfo.toString());
     }
 
-    private boolean isThreeErrorsOneAfterAnother(int currentIteration, Map<Integer, String> executionJournal) {
+    private boolean isThreeErrorsOneAfterAnother(int currentIteration, Map<Integer, ExecutionRecord> executionJournal) {
         if (executionJournal.size() < 3) {
             return false;
         }
         int prevIteration = currentIteration - 1;
         int prevPrevIteration = currentIteration - 2;
-        return executionJournal.get(prevIteration).equals("Fail") && executionJournal.get(prevPrevIteration).equals("Fail");
+        return !executionJournal.get(prevIteration).getIsSuccess() && !executionJournal.get(prevPrevIteration).getIsSuccess();
+    }
+
+    @Override
+    public void stopIndexing() {
+        isContinue.set(false);
     }
 
     private boolean checkLoopCriteria(Integer amount, List<User> userList) {
@@ -178,7 +192,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserDto> getUsers(String accessToken, int amount, String city, Integer ageFrom, Integer ageTo,
+    public List<UserDto> getUsers( int amount, String city, Integer ageFrom, Integer ageTo,
                                   String name) throws ServiceException {
         return new ArrayList<>();
     }
@@ -189,12 +203,12 @@ public class UserServiceImpl implements UserService {
     }
 
 
-    private void setPhotos(User user, String accessToken) throws ServiceException {
+    private void setPhotos(User user) throws ServiceException {
         String response;
         SearchUserResponseWrapperVo<PhotoVo> responseWrapperVO;
         Map<String, String> params = new HashMap<>();
         params.put("owner_id", user.getId().toString());
-        params.put("access_token", accessToken);
+        params.put("access_token", VkDatingAppConstants.ACCESS_TOKEN);
         params.put("v", VkDatingAppConstants.API_VERSION);
         try {
             response = HttpClient.sendPOST("https://api.vk.com/method/photos.getAll", params);
@@ -227,8 +241,6 @@ public class UserServiceImpl implements UserService {
 
 
     private List<UserVo> filterUsersBasicCriteria(List<UserVo> currentUsersVo) {
-        long countLastSeenFiltered = currentUsersVo.stream().filter(this::lastSeenFilter).count();
-        logger.info("Filtered amount of accounts inactive: " + ((long) currentUsersVo.size() - countLastSeenFiltered));
         return currentUsersVo.stream().
                 filter(el -> el.getIsClosed() != null && el.getIsClosed().equals(false)).
                 filter(el -> el.getHasPhoto() != null && el.getHasPhoto().equals(true)).
@@ -262,5 +274,6 @@ public class UserServiceImpl implements UserService {
         params.put("country_id", VkDatingAppConstants.COUNTRY_ID.toString());
         params.put("sex", VkDatingAppConstants.SEX.toString());
         params.put("count", VkDatingAppConstants.COUNT.toString());
+        params.put("access_token", VkDatingAppConstants.ACCESS_TOKEN);
     }
 }

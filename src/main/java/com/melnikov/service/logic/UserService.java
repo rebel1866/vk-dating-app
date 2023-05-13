@@ -7,7 +7,9 @@ import java.util.List;
 
 public interface UserService {
 
-    List<UserDto> getUsers(String accessToken, int amount, String city, Integer ageFrom, Integer ageTo,String name)
+    List<UserDto> getUsers(int amount, String city, Integer ageFrom, Integer ageTo,String name)
             throws ServiceException;
-    void startIndexing(Integer amount, String accessToken, Integer tokenExpires);
+    void startIndexing(Integer amount);
+
+    void stopIndexing();
 }
