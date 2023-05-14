@@ -1,9 +1,11 @@
 package com.melnikov.service.logic.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.melnikov.dao.model.ClosedUser;
 import com.melnikov.dao.model.Photo;
 import com.melnikov.dao.model.User;
 import com.melnikov.dao.model.constant.Relation;
+import com.melnikov.dao.repository.ClosedUserRepository;
 import com.melnikov.dao.repository.UserRepository;
 import com.melnikov.service.constant.VkDatingAppConstants;
 import com.melnikov.service.dto.UserDto;
@@ -38,6 +40,7 @@ public class UserServiceImpl implements UserService {
     private JsonParser<SearchUserResponseWrapperVo<PhotoVo>> jsonParserPhotos;
     private UserRepository userRepository;
     private NameService nameService;
+    private ClosedUserRepository closedUserRepository;
     private final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
 
     @Value("${basic.age.from}")
@@ -56,6 +59,11 @@ public class UserServiceImpl implements UserService {
     @Autowired
     public void setJsonParserUsers(JsonParser<SearchUserResponseWrapperVo<UserVo>> jsonParserUsers) {
         this.jsonParserUsers = jsonParserUsers;
+    }
+
+    @Autowired
+    public void setClosedUserRepository(ClosedUserRepository closedUserRepository) {
+        this.closedUserRepository = closedUserRepository;
     }
 
     @Autowired
@@ -121,7 +129,7 @@ public class UserServiceImpl implements UserService {
             }
             List<UserVo> currentUsersVo = responseWrapperVO.getResponse().getItems();
             if (currentUsersVo.size() == 0) {
-                logger.info("Empty response hsa been detected.");
+                logger.info("Empty response has been detected.");
                 executionJournal.put(currentIteration, new ExecutionRecord(false, true,
                         0, requestVo));
                 continue;
@@ -129,7 +137,14 @@ public class UserServiceImpl implements UserService {
             logger.info("found users: " + currentUsersVo.size());
             List<UserVo> basicCriteriaUsersVo = filterUsersBasicCriteria(currentUsersVo);
             logger.info("Filtered currentUsersVo by basic criterias, amount: " + basicCriteriaUsersVo.size());
-            //also take those accs are currently closed and write to db
+            List<ClosedUser> usersClosed = basicCriteriaUsersVo.stream().
+                    filter(el -> el.getHasPhoto() != null && el.getHasPhoto().equals(true)).
+                    filter(this::lastSeenFilter).
+                    filter(el -> el.getIsClosed() != null && el.getIsClosed().equals(true)).
+                    map(user -> new ClosedUser(user.getId(), LocalDateTime.now())).toList();
+            logger.info("Found closed users, amount: " + usersClosed.size());
+            closedUserRepository.saveAll(usersClosed);
+            logger.info("Saved all closed users");
             List<User> usersWithPhotos = basicCriteriaUsersVo.stream().map(UserVoToModelConverter::convert).
                     collect(Collectors.toList());
             List<String> comments = new ArrayList<>();
@@ -192,7 +207,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserDto> getUsers( int amount, String city, Integer ageFrom, Integer ageTo,
+    public List<UserDto> getUsers(int amount, String city, Integer ageFrom, Integer ageTo,
                                   String name) throws ServiceException {
         return new ArrayList<>();
     }
@@ -250,11 +265,14 @@ public class UserServiceImpl implements UserService {
                         return true;
                     } else {
                         return !el.getRelation().equals(Relation.N2.getNumber())
-                                && !el.getRelation().equals(Relation.N3.getNumber()) && !el.getRelation().equals(Relation.N4.getNumber())
-                                && !el.getRelation().equals(Relation.N7.getNumber()) && !el.getRelation().equals(Relation.N8.getNumber());
+                                && !el.getRelation().equals(Relation.N3.getNumber())
+                                && !el.getRelation().equals(Relation.N4.getNumber())
+                                && !el.getRelation().equals(Relation.N7.getNumber())
+                                && !el.getRelation().equals(Relation.N8.getNumber());
                     }
                 }).
                 toList();
+        //status & relatives - child
     }
 
     private boolean lastSeenFilter(UserVo userVo) {
