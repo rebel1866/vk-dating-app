@@ -6,6 +6,7 @@ import com.melnikov.dao.model.Photo;
 import com.melnikov.dao.model.User;
 import com.melnikov.dao.model.constant.Relation;
 import com.melnikov.dao.repository.ClosedUserRepository;
+import com.melnikov.dao.repository.UserCustomRepository;
 import com.melnikov.dao.repository.UserRepository;
 import com.melnikov.service.constant.VkDatingAppConstants;
 import com.melnikov.service.dto.UserDto;
@@ -16,6 +17,7 @@ import com.melnikov.service.vo.*;
 import com.melnikov.util.DateUtil;
 import com.melnikov.util.HttpClient;
 import com.melnikov.util.JsonParser;
+import com.melnikov.util.converter.UserModelToDtoConverter;
 import com.melnikov.util.converter.UserVoToModelConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +43,7 @@ public class UserServiceImpl implements UserService {
     private UserRepository userRepository;
     private NameService nameService;
     private ClosedUserRepository closedUserRepository;
+    private UserCustomRepository userCustomRepository;
     private final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
 
     @Value("${basic.age.from}")
@@ -69,6 +72,11 @@ public class UserServiceImpl implements UserService {
     @Autowired
     public void setJsonParserPhotos(JsonParser<SearchUserResponseWrapperVo<PhotoVo>> jsonParserPhotos) {
         this.jsonParserPhotos = jsonParserPhotos;
+    }
+
+    @Autowired
+    public void setUserCustomRepository(UserCustomRepository userCustomRepository) {
+        this.userCustomRepository = userCustomRepository;
     }
 
     @Autowired
@@ -137,7 +145,7 @@ public class UserServiceImpl implements UserService {
             logger.info("found users: " + currentUsersVo.size());
             List<UserVo> basicCriteriaUsersVo = filterUsersBasicCriteria(currentUsersVo);
             logger.info("Filtered currentUsersVo by basic criterias, amount: " + basicCriteriaUsersVo.size());
-            List<ClosedUser> usersClosed = basicCriteriaUsersVo.stream().
+            List<ClosedUser> usersClosed = currentUsersVo.stream().
                     filter(el -> el.getHasPhoto() != null && el.getHasPhoto().equals(true)).
                     filter(this::lastSeenFilter).
                     filter(el -> el.getIsClosed() != null && el.getIsClosed().equals(true)).
@@ -207,9 +215,38 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserDto> getUsers(int amount, String city, Integer ageFrom, Integer ageTo,
-                                  String name) throws ServiceException {
-        return new ArrayList<>();
+    public List<UserDto> getUsers(int amount, String city, Integer ageFrom, Integer ageTo, String name) throws ServiceException {
+        List<User> userList = new ArrayList<>();
+        for (int page = 0; userList.size() != amount; page++) {
+            List<User> currentUsers = userCustomRepository.findUsersByParams(page, amount, city, ageFrom, ageTo, name);
+            if (currentUsers.size() == 0) {
+                break;
+            }
+            for (User user : currentUsers) {
+                if (isStillActual(user)) {
+                    userList.add(user);
+                    if (userList.size() == amount) {
+                        break;
+                    }
+                }
+            }
+        }
+        if (userList.size() == 0) {
+            throw new ServiceException("No users found");
+        }
+        return userList.stream().map(UserModelToDtoConverter::convert).collect(Collectors.toList());
+    }
+
+    int c = -1;
+    private boolean isStillActual(User user) {
+        c++;
+        return switch (c) {
+            case 0 -> false;
+            case 1 -> true;
+            case 2 -> false;
+            case 3 -> true;
+            default -> true;
+        };
     }
 
     private List<User> filterUsersByPhotoAmount(List<User> usersWithPhotos) {
