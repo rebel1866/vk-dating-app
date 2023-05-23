@@ -13,5 +13,5 @@ public interface UserService {
 
     void stopIndexing();
 
-    void updateHasBeenViewed(Long id);
+    void updateHasBeenViewed(Long id) throws ServiceException;
 }

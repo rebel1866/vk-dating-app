@@ -49,7 +49,11 @@ public class UserController {
     @PatchMapping("/users/id")
     private Map<String, String> updateHasBeenViewed(Long id) {
         Map<String, String> response = new HashMap<>();
-        userService.updateHasBeenViewed(id);
+        try {
+            userService.updateHasBeenViewed(id);
+        } catch (ServiceException e) {
+            throw new RuntimeException(e);
+        }
         response.put("response", "User has been updated");
         return response;
     }

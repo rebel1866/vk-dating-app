@@ -361,8 +361,9 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void updateHasBeenViewed(Long id) {
-    User user = userRepository.findById(id).orElseThrow(()-> new Servi);
-
+    public void updateHasBeenViewed(Long id) throws ServiceException {
+        User user = userRepository.findById(id).orElseThrow(() -> new ServiceException("User has not been found with id: " + id));
+        user.setHasBeenViewed(true);
+        userRepository.save(user);
     }
 }
