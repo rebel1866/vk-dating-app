@@ -12,4 +12,6 @@ public interface UserService {
     void startIndexing(Integer amount);
 
     void stopIndexing();
+
+    void updateHasBeenViewed(Long id);
 }

@@ -5,6 +5,7 @@ import com.melnikov.dao.repository.UserCustomRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -43,6 +44,8 @@ public class UserCustomRepositoryImpl implements UserCustomRepository {
         }
         Pageable pageableRequest = PageRequest.of(page, pageSize);
         query.with(pageableRequest);
+        query.with(Sort.by(Sort.Direction.DESC, "id"));
+        query.addCriteria(Criteria.where("hasBeenViewed").is(false));
         return mongoTemplate.find(query, User.class);
     }
 }

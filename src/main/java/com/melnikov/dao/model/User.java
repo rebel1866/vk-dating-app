@@ -22,9 +22,9 @@ public class User {
     private String firstName;
     private String lastName;
     private Short age;
-    private Boolean isFriend;           // upd
-    private Boolean canWritePrivateMessage; // upd update these fields when they're fetched from db
-    private Boolean canSendFriendRequest; //upd
+    private Boolean isFriend;
+    private Boolean canWritePrivateMessage;
+    private Boolean canSendFriendRequest;
     private LocalDateTime savingTime;
     private Boolean hasBeenViewed;
     private Boolean isVkFavorite;

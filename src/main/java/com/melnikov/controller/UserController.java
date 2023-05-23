@@ -46,4 +46,11 @@ public class UserController {
         response.put("response", "Search task has been successfully stopped");
         return response;
     }
+    @PatchMapping("/users/id")
+    private Map<String, String> updateHasBeenViewed(Long id) {
+        Map<String, String> response = new HashMap<>();
+        userService.updateHasBeenViewed(id);
+        response.put("response", "User has been updated");
+        return response;
+    }
 }

@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -40,6 +41,7 @@ public class UserServiceImpl implements UserService {
 
     private JsonParser<SearchUserResponseWrapperVo<UserVo>> jsonParserUsers;
     private JsonParser<SearchUserResponseWrapperVo<PhotoVo>> jsonParserPhotos;
+    private JsonParser<UserGetVoWrapper> jsonParserUser;
     private UserRepository userRepository;
     private NameService nameService;
     private ClosedUserRepository closedUserRepository;
@@ -57,36 +59,24 @@ public class UserServiceImpl implements UserService {
     @Value("${amount.photos.for.filtering}")
     private Byte amountPhotoForFiltering;
 
+    @Value("${amount.days.when.need.refresh}")
+    private Byte amountDaysForRefresh;
+
     private final AtomicBoolean isContinue = new AtomicBoolean();
 
     @Autowired
-    public void setJsonParserUsers(JsonParser<SearchUserResponseWrapperVo<UserVo>> jsonParserUsers) {
+    public UserServiceImpl(JsonParser<SearchUserResponseWrapperVo<UserVo>> jsonParserUsers,
+                           JsonParser<SearchUserResponseWrapperVo<PhotoVo>> jsonParserPhotos,
+                           JsonParser<UserGetVoWrapper> jsonParserUser, UserRepository userRepository,
+                           NameService nameService, ClosedUserRepository closedUserRepository,
+                           UserCustomRepository userCustomRepository) {
         this.jsonParserUsers = jsonParserUsers;
-    }
-
-    @Autowired
-    public void setClosedUserRepository(ClosedUserRepository closedUserRepository) {
-        this.closedUserRepository = closedUserRepository;
-    }
-
-    @Autowired
-    public void setJsonParserPhotos(JsonParser<SearchUserResponseWrapperVo<PhotoVo>> jsonParserPhotos) {
         this.jsonParserPhotos = jsonParserPhotos;
-    }
-
-    @Autowired
-    public void setUserCustomRepository(UserCustomRepository userCustomRepository) {
-        this.userCustomRepository = userCustomRepository;
-    }
-
-    @Autowired
-    public void setNameService(NameService nameService) {
-        this.nameService = nameService;
-    }
-
-    @Autowired
-    public void setUserRepository(UserRepository userRepository) {
+        this.jsonParserUser = jsonParserUser;
         this.userRepository = userRepository;
+        this.nameService = nameService;
+        this.closedUserRepository = closedUserRepository;
+        this.userCustomRepository = userCustomRepository;
     }
 
     @Override
@@ -216,6 +206,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<UserDto> getUsers(int amount, String city, Integer ageFrom, Integer ageTo, String name) throws ServiceException {
+        logger.info("Request - " + String.format("amount: %s, city: %s, ageFrom: %s, ageTo: %s, name: %s", amount, city,
+                ageFrom, ageTo, name));
         List<User> userList = new ArrayList<>();
         for (int page = 0; userList.size() != amount; page++) {
             List<User> currentUsers = userCustomRepository.findUsersByParams(page, amount, city, ageFrom, ageTo, name);
@@ -237,16 +229,50 @@ public class UserServiceImpl implements UserService {
         return userList.stream().map(UserModelToDtoConverter::convert).collect(Collectors.toList());
     }
 
-    int c = -1;
     private boolean isStillActual(User user) {
-        c++;
-        return switch (c) {
-            case 0 -> false;
-            case 1 -> true;
-            case 2 -> false;
-            case 3 -> true;
-            default -> true;
-        };
+        long periodDays = TimeUnit.MILLISECONDS.toDays(Duration.between(user.getSavingTime(), LocalDateTime.now()).toMillis());
+        if (periodDays < amountDaysForRefresh) {
+            return true;
+        }
+        String response;
+        Map<String, String> params = new HashMap<>();
+        params.put("user_ids", user.getId().toString());
+        params.put("fields", VkDatingAppConstants.USER_SEARCH_FIELDS);
+        params.put("access_token", VkDatingAppConstants.ACCESS_TOKEN);
+        params.put("v", VkDatingAppConstants.API_VERSION);
+        UserGetVoWrapper userGetVoWrapper;
+        try {
+            response = HttpClient.sendPOST("https://api.vk.com/method/users.get", params);
+            response = response.replaceAll("personal\":\\[\\]", "personal\":{}");
+            userGetVoWrapper = jsonParserUser.parseJson(response, new TypeReference<>(){});
+        } catch (IOException e) {
+            logger.error("Could not update user with id " + user.getId() + ": " + e.getMessage());
+            return false;
+        }
+        List<UserVo> userUpds = userGetVoWrapper.getResponse();
+        if (userUpds.size() == 0) {
+            return false;
+        }
+        UserVo userUpd = userUpds.get(0);
+        if (!lastSeenFilter(userUpd) || !userUpd.getHasPhoto()) {
+            userRepository.deleteById(userUpd.getId());
+            return false;
+        }
+        if (!userUpd.getIsClosed()) {
+            if (!relationFilter(userUpd)) {
+                userRepository.deleteById(userUpd.getId());
+                return false;
+            }
+        }
+        updateBasicUserFields(user, userUpd);
+        return true;
+    }
+
+    private void updateBasicUserFields(User user, UserVo userUpd) {
+        user.setCanSendFriendRequest(userUpd.getCanSendFriendRequest());
+        user.setCanWritePrivateMessage(userUpd.getCanWritePrivateMessage());
+        user.setIsFriend(userUpd.getIsFriend());
+        user.setIsVkFavorite(userUpd.getIsFavorite());
     }
 
     private List<User> filterUsersByPhotoAmount(List<User> usersWithPhotos) {
@@ -297,19 +323,21 @@ public class UserServiceImpl implements UserService {
                 filter(el -> el.getIsClosed() != null && el.getIsClosed().equals(false)).
                 filter(el -> el.getHasPhoto() != null && el.getHasPhoto().equals(true)).
                 filter(this::lastSeenFilter).
-                filter(el -> {
-                    if (el.getRelation() == null) {
-                        return true;
-                    } else {
-                        return !el.getRelation().equals(Relation.N2.getNumber())
-                                && !el.getRelation().equals(Relation.N3.getNumber())
-                                && !el.getRelation().equals(Relation.N4.getNumber())
-                                && !el.getRelation().equals(Relation.N7.getNumber())
-                                && !el.getRelation().equals(Relation.N8.getNumber());
-                    }
-                }).
+                filter(this::relationFilter).
                 toList();
         //status & relatives - child
+    }
+
+    private boolean relationFilter(UserVo userVo) {
+        if (userVo.getRelation() == null) {
+            return true;
+        } else {
+            return !userVo.getRelation().equals(Relation.N2.getNumber())
+                    && !userVo.getRelation().equals(Relation.N3.getNumber())
+                    && !userVo.getRelation().equals(Relation.N4.getNumber())
+                    && !userVo.getRelation().equals(Relation.N7.getNumber())
+                    && !userVo.getRelation().equals(Relation.N8.getNumber());
+        }
     }
 
     private boolean lastSeenFilter(UserVo userVo) {
@@ -330,5 +358,11 @@ public class UserServiceImpl implements UserService {
         params.put("sex", VkDatingAppConstants.SEX.toString());
         params.put("count", VkDatingAppConstants.COUNT.toString());
         params.put("access_token", VkDatingAppConstants.ACCESS_TOKEN);
+    }
+
+    @Override
+    public void updateHasBeenViewed(Long id) {
+    User user = userRepository.findById(id).orElseThrow(()-> new Servi);
+
     }
 }
