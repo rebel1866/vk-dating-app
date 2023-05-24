@@ -97,30 +97,39 @@ public class UserServiceImpl implements UserService {
                 String[] array = element.split("=");
                 quotasMap.put(array[0].trim(), Integer.valueOf(array[1].trim()));
             });
+
         }
-        for (Map.Entry<String, Integer> entry : quotasMap.entrySet()) {
-            logger.info("start new iteration amount checking");
-            String key = entry.getKey();
-            Integer value = entry.getValue();
-            int countForKey = userRepository.countByCityNameIgnoreCase(key);
-            int diff = value - countForKey;
-            if (diff > 0) {
-                startIndexing(null);
-                for (; ; ) {
-                    try {
-                        TimeUnit.SECONDS.sleep(15);
-                    } catch (InterruptedException e) {
-                        logger.error("Sleep has been interrupted");
-                    }
-                    int newVal = userRepository.countByCityNameIgnoreCase(key);
-                    if (newVal >= diff) {
-                        stopIndexing();
-                        break;
-                    }
+        if (checkNeedToUpdate()) {
+            logger.info("Need to update");
+            startIndexing(null);
+            for (; ; ) {
+                try {
+                    TimeUnit.SECONDS.sleep(15);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                if (!checkNeedToUpdate()) {
+                    stopIndexing();
+                    break;
                 }
             }
         }
         logger.info("stop amount checking");
+    }
+
+    private boolean checkNeedToUpdate() {
+        boolean isNeedToUpdate = false;
+        for (Map.Entry<String, Integer> entry : quotasMap.entrySet()) {
+            String key = entry.getKey();
+            Integer quota = entry.getValue();
+            int countForKey = userRepository.countByCityNameIgnoreCase(key);
+            int diff = quota - countForKey;
+            if (diff > 0) {
+                isNeedToUpdate = true;
+                break;
+            }
+        }
+        return isNeedToUpdate;
     }
 
     @Override
