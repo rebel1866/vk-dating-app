@@ -17,6 +17,7 @@ import com.melnikov.service.vo.*;
 import com.melnikov.util.DateUtil;
 import com.melnikov.util.HttpClient;
 import com.melnikov.util.JsonParser;
+import com.melnikov.util.ThreadPool;
 import com.melnikov.util.converter.UserModelToDtoConverter;
 import com.melnikov.util.converter.UserVoToModelConverter;
 import org.slf4j.Logger;
@@ -30,8 +31,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -64,12 +63,14 @@ public class UserServiceImpl implements UserService {
 
     private final AtomicBoolean isContinue = new AtomicBoolean();
 
+    private final ThreadPool threadPool;
+
     @Autowired
     public UserServiceImpl(JsonParser<SearchUserResponseWrapperVo<UserVo>> jsonParserUsers,
                            JsonParser<SearchUserResponseWrapperVo<PhotoVo>> jsonParserPhotos,
                            JsonParser<UserGetVoWrapper> jsonParserUser, UserRepository userRepository,
                            NameService nameService, ClosedUserRepository closedUserRepository,
-                           UserCustomRepository userCustomRepository) {
+                           UserCustomRepository userCustomRepository, ThreadPool threadPool) {
         this.jsonParserUsers = jsonParserUsers;
         this.jsonParserPhotos = jsonParserPhotos;
         this.jsonParserUser = jsonParserUser;
@@ -77,12 +78,12 @@ public class UserServiceImpl implements UserService {
         this.nameService = nameService;
         this.closedUserRepository = closedUserRepository;
         this.userCustomRepository = userCustomRepository;
+        this.threadPool = threadPool;
     }
 
     @Override
     public void startIndexing(Integer amount) {
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        executorService.submit(() -> runIndexing(amount));
+        threadPool.getExecutorService().submit(() -> runIndexing(amount));
     }
 
     private void runIndexing(Integer amount) {
