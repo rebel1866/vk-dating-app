@@ -90,6 +90,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Scheduled(fixedDelayString = "${fixedDelay.in.milliseconds}", initialDelay = 5000)
     public void startAmountChecking() {
+        logger.info("start amount checking");
         if (quotasMap == null) {
             quotasMap = new HashMap<>();
             Arrays.stream(quotas).map(String::trim).forEach(element -> {
@@ -98,14 +99,28 @@ public class UserServiceImpl implements UserService {
             });
         }
         for (Map.Entry<String, Integer> entry : quotasMap.entrySet()) {
+            logger.info("start new iteration amount checking");
             String key = entry.getKey();
             Integer value = entry.getValue();
             int countForKey = userRepository.countByCityNameIgnoreCase(key);
             int diff = value - countForKey;
             if (diff > 0) {
-                runIndexing(diff);
+                startIndexing(null);
+                for (; ; ) {
+                    try {
+                        TimeUnit.SECONDS.sleep(15);
+                    } catch (InterruptedException e) {
+                        logger.error("Sleep has been interrupted");
+                    }
+                    int newVal = userRepository.countByCityNameIgnoreCase(key);
+                    if (newVal >= diff) {
+                        stopIndexing();
+                        break;
+                    }
+                }
             }
         }
+        logger.info("stop amount checking");
     }
 
     @Override
