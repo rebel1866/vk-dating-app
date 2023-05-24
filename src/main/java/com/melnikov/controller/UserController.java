@@ -46,7 +46,7 @@ public class UserController {
         return response;
     }
     @PutMapping("/{id}")
-    private Map<String, String> updateHasBeenViewed(@RequestBody Map<String, Object> params, @PathVariable Long id) {
+    private Map<String, String> updateUserByParams(@RequestBody Map<String, Object> params, @PathVariable Long id) {
         Map<String, String> response = new HashMap<>();
         try {
             userService.updateUserByParams(id, params);

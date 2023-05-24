@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -61,6 +62,11 @@ public class UserServiceImpl implements UserService {
     @Value("${amount.days.when.need.refresh}")
     private Byte amountDaysForRefresh;
 
+    @Value("${quotas}")
+    private String[] quotas;
+
+    private Map<String, Integer> quotasMap;
+
     private final AtomicBoolean isContinue = new AtomicBoolean();
 
     private final ThreadPool threadPool;
@@ -79,6 +85,27 @@ public class UserServiceImpl implements UserService {
         this.closedUserRepository = closedUserRepository;
         this.userCustomRepository = userCustomRepository;
         this.threadPool = threadPool;
+    }
+
+    @Override
+    @Scheduled(fixedDelayString = "${fixedDelay.in.milliseconds}", initialDelay = 5000)
+    public void startAmountChecking() {
+        if (quotasMap == null) {
+            quotasMap = new HashMap<>();
+            Arrays.stream(quotas).map(String::trim).forEach(element -> {
+                String[] array = element.split("=");
+                quotasMap.put(array[0].trim(), Integer.valueOf(array[1].trim()));
+            });
+        }
+        for (Map.Entry<String, Integer> entry : quotasMap.entrySet()) {
+            String key = entry.getKey();
+            Integer value = entry.getValue();
+            int countForKey = userRepository.countByCityNameIgnoreCase(key);
+            int diff = value - countForKey;
+            if (diff > 0) {
+                runIndexing(diff);
+            }
+        }
     }
 
     @Override
@@ -150,7 +177,7 @@ public class UserServiceImpl implements UserService {
             for (User user : usersWithPhotos) {
                 try {
                     setPhotos(user);
-                    TimeUnit.MILLISECONDS.sleep(500);
+                    TimeUnit.MILLISECONDS.sleep(700);
                 } catch (ServiceException | InterruptedException e) {
                     logger.error(String.format("Error while trying to set photos for user with id %s : %s",
                             user.getId(), e.getMessage()));
@@ -245,7 +272,8 @@ public class UserServiceImpl implements UserService {
         try {
             response = HttpClient.sendPOST("https://api.vk.com/method/users.get", params);
             response = response.replaceAll("personal\":\\[\\]", "personal\":{}");
-            userGetVoWrapper = jsonParserUser.parseJson(response, new TypeReference<>(){});
+            userGetVoWrapper = jsonParserUser.parseJson(response, new TypeReference<>() {
+            });
         } catch (IOException e) {
             logger.error("Could not update user with id " + user.getId() + ": " + e.getMessage());
             return false;

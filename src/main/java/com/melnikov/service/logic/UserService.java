@@ -15,4 +15,6 @@ public interface UserService {
     void stopIndexing();
 
     void updateUserByParams(Long id, Map<String, Object> params) throws ServiceException;
+
+    void startAmountChecking();
 }
