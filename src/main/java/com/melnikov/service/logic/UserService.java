@@ -4,6 +4,7 @@ import com.melnikov.service.dto.UserDto;
 import com.melnikov.service.exception.ServiceException;
 
 import java.util.List;
+import java.util.Map;
 
 public interface UserService {
 
@@ -13,5 +14,5 @@ public interface UserService {
 
     void stopIndexing();
 
-    void updateHasBeenViewed(Long id) throws ServiceException;
+    void updateUserByParams(Long id, Map<String, Object> params) throws ServiceException;
 }

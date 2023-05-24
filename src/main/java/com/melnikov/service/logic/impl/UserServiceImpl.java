@@ -361,9 +361,12 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void updateHasBeenViewed(Long id) throws ServiceException {
+    public void updateUserByParams(Long id, Map<String, Object> params) throws ServiceException {
         User user = userRepository.findById(id).orElseThrow(() -> new ServiceException("User has not been found with id: " + id));
-        user.setHasBeenViewed(true);
+        Object hasBeenViewedStr = params.get("hasBeenViewed");
+        if (hasBeenViewedStr != null) {
+            user.setHasBeenViewed(Boolean.valueOf((String) hasBeenViewedStr));
+        }
         userRepository.save(user);
     }
 }

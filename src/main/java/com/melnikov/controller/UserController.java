@@ -6,7 +6,6 @@ import com.melnikov.service.logic.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,11 +45,11 @@ public class UserController {
         response.put("response", "Search task has been successfully stopped");
         return response;
     }
-    @PatchMapping("/users/id")
-    private Map<String, String> updateHasBeenViewed(Long id) {
+    @PutMapping("/{id}")
+    private Map<String, String> updateHasBeenViewed(@RequestBody Map<String, Object> params, @PathVariable Long id) {
         Map<String, String> response = new HashMap<>();
         try {
-            userService.updateHasBeenViewed(id);
+            userService.updateUserByParams(id, params);
         } catch (ServiceException e) {
             throw new RuntimeException(e);
         }
