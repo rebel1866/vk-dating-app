@@ -17,6 +17,7 @@ import com.melnikov.service.vo.*;
 import com.melnikov.util.DateUtil;
 import com.melnikov.util.HttpClient;
 import com.melnikov.util.JsonParser;
+import com.melnikov.util.Random;
 import com.melnikov.util.ThreadPool;
 import com.melnikov.util.converter.UserModelToDtoConverter;
 import com.melnikov.util.converter.UserVoToModelConverter;
@@ -91,7 +92,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Scheduled(fixedDelayString = "${fixedDelay.in.milliseconds}", initialDelay = 5000)
     public void startAmountChecking() {
-        if(!isCheckingEnabled){
+        if (!isCheckingEnabled) {
             return;
         }
         logger.info("start amount checking");
@@ -432,5 +433,30 @@ public class UserServiceImpl implements UserService {
             user.setIsApplicationFavorite((Boolean) isApplicationFavorite);
         }
         userRepository.save(user);
+    }
+
+    @Override
+    public void sendMessage(String message, String token, Long id) throws ServiceException {
+        Map<String, String> params = new HashMap<>();
+        params.put("v", VkDatingAppConstants.API_VERSION);
+        params.put("access_token", token);
+        params.put("user_id", id.toString());
+        params.put("message", message);
+        params.put("random_id", String.valueOf(Random.getRandom(1000L, 1000000000000000000L)));
+        String response;
+        try {
+            response = HttpClient.sendPOST("https://api.vk.com/method/messages.send", params);
+        } catch (IOException e) {
+            throw new ServiceException("Could not send message to user with id: " + id);
+        }
+        if (response.contains("error")) {
+            String eMessage;
+            try {
+                eMessage = JsonParser.getValue(response, "error_msg");
+            } catch (IOException e) {
+                throw new ServiceException("Error sending message. Reason unknown. User id: " + id);
+            }
+            throw new ServiceException(eMessage + " User id: " + id);
+        }
     }
 }

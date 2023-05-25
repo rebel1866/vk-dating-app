@@ -17,4 +17,6 @@ public interface UserService {
     void updateUserByParams(Long id, Map<String, Object> params) throws ServiceException;
 
     void startAmountChecking();
+
+    void sendMessage(String message, String token, Long id) throws ServiceException;
 }
