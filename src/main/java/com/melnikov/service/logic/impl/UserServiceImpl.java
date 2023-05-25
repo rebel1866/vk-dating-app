@@ -65,7 +65,8 @@ public class UserServiceImpl implements UserService {
     @Value("${quotas}")
     private String[] quotas;
 
-    private Map<String, Integer> quotasMap;
+    @Value("${is.checking.enabled}")
+    private Boolean isCheckingEnabled;
 
     private final AtomicBoolean isContinue = new AtomicBoolean();
 
@@ -90,39 +91,32 @@ public class UserServiceImpl implements UserService {
     @Override
     @Scheduled(fixedDelayString = "${fixedDelay.in.milliseconds}", initialDelay = 5000)
     public void startAmountChecking() {
-        logger.info("start amount checking");
-        if (quotasMap == null) {
-            quotasMap = new HashMap<>();
-            Arrays.stream(quotas).map(String::trim).forEach(element -> {
-                String[] array = element.split("=");
-                quotasMap.put(array[0].trim(), Integer.valueOf(array[1].trim()));
-            });
-
+        if(!isCheckingEnabled){
+            return;
         }
-        if (checkNeedToUpdate()) {
+        logger.info("start amount checking");
+        Map<String, Integer> quotasMap = new HashMap<>();
+        Arrays.stream(quotas).map(String::trim).forEach(element -> {
+            String[] array = element.split("=");
+            quotasMap.put(array[0].trim(), Integer.valueOf(array[1].trim()));
+        });
+        if (quotasMap.size() == 0) {
+            logger.info("quotasMap is empty");
+            return;
+        }
+        if (checkNeedToUpdate(quotasMap)) {
             logger.info("Need to update");
-            startIndexing(null);
-            for (; ; ) {
-                try {
-                    TimeUnit.SECONDS.sleep(15);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-                if (!checkNeedToUpdate()) {
-                    stopIndexing();
-                    break;
-                }
-            }
+            runIndexing(null, quotasMap);
         }
         logger.info("stop amount checking");
     }
 
-    private boolean checkNeedToUpdate() {
+    private boolean checkNeedToUpdate(Map<String, Integer> quotasMap) {
         boolean isNeedToUpdate = false;
         for (Map.Entry<String, Integer> entry : quotasMap.entrySet()) {
             String key = entry.getKey();
             Integer quota = entry.getValue();
-            int countForKey = userRepository.countByCityNameIgnoreCase(key);
+            int countForKey = userRepository.countByCityNameIgnoreCaseAndHasBeenViewed(key, false);
             int diff = quota - countForKey;
             if (diff > 0) {
                 isNeedToUpdate = true;
@@ -134,17 +128,21 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void startIndexing(Integer amount) {
-        threadPool.getExecutorService().submit(() -> runIndexing(amount));
+        if (isCheckingEnabled) {
+            logger.info("Automatic amount checking enabled.");
+            return;
+        }
+        threadPool.getExecutorService().submit(() -> runIndexing(amount, null));
     }
 
-    private void runIndexing(Integer amount) {
+    private void runIndexing(Integer amount, Map<String, Integer> quotasMap) {
         Map<String, String> params = new HashMap<>();
         initParams(params);
         List<User> userList = new ArrayList<>();
         isContinue.set(true);
         int currentIteration = -1;
         Map<Integer, ExecutionRecord> executionJournal = new LinkedHashMap<>();
-        while (checkLoopCriteria(amount, userList)) {
+        while (checkLoopCriteria(amount, userList, quotasMap)) {
             currentIteration++;
             ApiSearchRequestVo requestVo;
             try {
@@ -245,14 +243,23 @@ public class UserServiceImpl implements UserService {
         isContinue.set(false);
     }
 
-    private boolean checkLoopCriteria(Integer amount, List<User> userList) {
+    private boolean checkLoopCriteria(Integer commonAmount, List<User> userList, Map<String, Integer> quotasMap) {
         if (!isContinue.get()) {
             return false;
         }
-        if (amount == null) {
-            return true;
+        if (commonAmount == null) {
+            if (quotasMap == null) {
+                return true;
+            } else {
+                Set<Map.Entry<String, Integer>> entrySet = quotasMap.entrySet();
+                Map.Entry<String, Integer> entry = entrySet.iterator().next();
+                String cityName = entry.getKey();
+                Integer cityQuota = entry.getValue();
+                int currentAmount = userRepository.countByCityNameIgnoreCaseAndHasBeenViewed(cityName, false);
+                return cityQuota - currentAmount > 0;
+            }
         } else {
-            return userList.size() <= amount;
+            return userList.size() <= commonAmount;
         }
     }
 
@@ -417,8 +424,12 @@ public class UserServiceImpl implements UserService {
     public void updateUserByParams(Long id, Map<String, Object> params) throws ServiceException {
         User user = userRepository.findById(id).orElseThrow(() -> new ServiceException("User has not been found with id: " + id));
         Object hasBeenViewedStr = params.get("hasBeenViewed");
+        Object isApplicationFavorite = params.get("isApplicationFavorite");
         if (hasBeenViewedStr != null) {
-            user.setHasBeenViewed(Boolean.valueOf((String) hasBeenViewedStr));
+            user.setHasBeenViewed((Boolean) hasBeenViewedStr);
+        }
+        if (isApplicationFavorite != null) {
+            user.setIsApplicationFavorite((Boolean) isApplicationFavorite);
         }
         userRepository.save(user);
     }
