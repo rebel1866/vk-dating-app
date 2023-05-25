@@ -87,4 +87,16 @@ public class UserController {
         response.put("response", "success");
         return response;
     }
+
+    @PostMapping("/checkTokenValid")
+    private Map<String, String> checkTokenValid(@RequestParam String token) {
+        Map<String, String> response = new HashMap<>();
+        boolean isTokenValid = userService.checkTokenValid(token);
+        if (isTokenValid) {
+            response.put("response", "valid");
+        } else {
+            response.put("response", "not_valid");
+        }
+        return response;
+    }
 }

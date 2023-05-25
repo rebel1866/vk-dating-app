@@ -71,6 +71,9 @@ public class UserServiceImpl implements UserService {
     @Value("${is.checking.enabled}")
     private Boolean isCheckingEnabled;
 
+    @Value("${account.for.checking.token}")
+    private Long accountForCheckingTokenId;
+
     private final AtomicBoolean isContinue = new AtomicBoolean();
 
     private final ThreadPool threadPool;
@@ -504,5 +507,21 @@ public class UserServiceImpl implements UserService {
             }
             throw new ServiceException(eMessage + " User id: " + id);
         }
+    }
+
+    @Override
+    public boolean checkTokenValid(String token) {
+        String response;
+        Map<String, String> params = new HashMap<>();
+        params.put("user_ids", accountForCheckingTokenId.toString());
+        params.put("access_token", token);
+        params.put("v", VkDatingAppConstants.API_VERSION);
+        try {
+            response = HttpClient.sendPOST("https://api.vk.com/method/users.get", params);
+        } catch (IOException e) {
+            logger.error("Could not send request for token checking");
+            return false;
+        }
+        return !response.contains("error");
     }
 }
