@@ -393,6 +393,7 @@ public class UserServiceImpl implements UserService {
                 filter(this::childFilter).
                 filter(this::statusFilter).
                 toList();
+        // TODO: 25/05/2023 friend amounts filter 
     }
 
     private boolean statusFilter(UserVo userVo) {
