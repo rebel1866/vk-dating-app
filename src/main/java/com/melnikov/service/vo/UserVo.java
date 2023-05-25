@@ -43,6 +43,7 @@ public class UserVo {
     private Integer relation;
     @JsonProperty("first_name")
     private String firstName;
+    private String status;
     @JsonProperty("last_name")
     private String lastName;
     @JsonProperty("is_closed")
@@ -50,5 +51,5 @@ public class UserVo {
     private PersonalVo personal;
     @JsonProperty("has_photo")
     private Boolean hasPhoto;
-    //instagram
+    private List<RelativeVo> relatives;
 }

@@ -35,6 +35,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -385,8 +387,30 @@ public class UserServiceImpl implements UserService {
                 filter(el -> el.getHasPhoto() != null && el.getHasPhoto().equals(true)).
                 filter(this::lastSeenFilter).
                 filter(this::relationFilter).
+                filter(this::childFilter).
+                filter(this::statusFilter).
                 toList();
-        //status & relatives - child
+    }
+
+    private boolean statusFilter(UserVo userVo) {
+        if (userVo.getStatus() != null && !userVo.getStatus().equals("")) {
+            Pattern pattern = Pattern.compile("\\D*\\d{1,2}\\.\\d{1,2}\\.\\d{2,4}\\D*");
+            Matcher matcher = pattern.matcher(userVo.getStatus());
+            return matcher.matches();
+        }
+        return true;
+    }
+
+    private boolean childFilter(UserVo userVo) {
+        if (userVo.getRelatives() == null) {
+            return true;
+        }
+        for (RelativeVo relativeVo : userVo.getRelatives()) {
+            if (relativeVo.getType() != null && relativeVo.getType().equals("child")) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private boolean relationFilter(UserVo userVo) {
