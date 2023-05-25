@@ -449,12 +449,34 @@ public class UserServiceImpl implements UserService {
         } catch (IOException e) {
             throw new ServiceException("Could not send message to user with id: " + id);
         }
+        handleError(response, "Error sending message. Reason unknown. User id: ", id);
+    }
+
+    @Override
+    public void addFriend(String message, String token, Long id) throws ServiceException {
+        Map<String, String> params = new HashMap<>();
+        params.put("v", VkDatingAppConstants.API_VERSION);
+        params.put("access_token", token);
+        params.put("user_id", id.toString());
+        if (message != null) {
+            params.put("text", message);
+        }
+        String response;
+        try {
+            response = HttpClient.sendPOST("https://api.vk.com/method/friends.add", params);
+        } catch (IOException e) {
+            throw new ServiceException("Could not send message to user with id: " + id);
+        }
+        handleError(response, "Error adding friend. Reason unknown. User id: ", id);
+    }
+
+    private void handleError(String response, String message, Long id) throws ServiceException {
         if (response.contains("error")) {
             String eMessage;
             try {
                 eMessage = JsonParser.getValue(response, "error_msg");
             } catch (IOException e) {
-                throw new ServiceException("Error sending message. Reason unknown. User id: " + id);
+                throw new ServiceException(message + id);
             }
             throw new ServiceException(eMessage + " User id: " + id);
         }

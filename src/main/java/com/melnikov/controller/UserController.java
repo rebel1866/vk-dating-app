@@ -70,6 +70,18 @@ public class UserController {
         response.put("response", "success");
         return response;
     }
+
+    @PostMapping("/addFriend/{id}")
+    private Map<String, String> addFriend(@RequestParam(required = false) String message, @RequestParam String token, @PathVariable Long id) {
+        Map<String, String> response = new HashMap<>();
+        try {
+            userService.addFriend(message, token, id);
+        } catch (ServiceException e) {
+            throw new RuntimeException(e);
+        }
+        response.put("response", "success");
+        return response;
+    }
 }
 
 // TODO: 25.05.23 exception handling
