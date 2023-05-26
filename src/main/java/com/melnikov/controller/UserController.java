@@ -7,6 +7,7 @@ import com.melnikov.service.logic.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,68 +36,64 @@ public class UserController {
 
     @GetMapping("/startSearching")
     private Map<String, String> startSearching(@RequestParam(required = false) Integer amount) {
-        Map<String, String> response = new HashMap<>();
         userService.startIndexing(amount);
-        response.put("response", "Search task has been successfully started");
-        return response;
+        return Collections.singletonMap("response", "Search task has been successfully started");
     }
 
     @GetMapping("/stopSearching")
     private Map<String, String> stopSearching() {
-        Map<String, String> response = new HashMap<>();
         userService.stopIndexing();
-        response.put("response", "Search task has been successfully stopped");
-        return response;
+        return Collections.singletonMap("response", "Search task has been successfully stopped");
     }
 
-    @PutMapping("/{id}")
-    private Map<String, String> updateUserByParams(@RequestBody Map<String, Object> params, @PathVariable Long id)
-            throws ControllerException {
-        Map<String, String> response = new HashMap<>();
+    @GetMapping("/setViewed/{id}")
+    private Map<String, String> setViewed(@PathVariable Long id) throws ControllerException {
         try {
-            userService.updateUserByParams(id, params);
+            userService.updateUserByParams(id, Collections.singletonMap("hasBeenViewed", true));
         } catch (ServiceException e) {
             throw new ControllerException(e.getMessage());
         }
-        response.put("response", "User has been updated");
-        return response;
+        return Collections.singletonMap("response", "success");
+    }
+
+    @GetMapping("/setAppFavorite/{id}")
+    private Map<String, String> setAppFavorite(@PathVariable Long id) throws ControllerException {
+        try {
+            userService.updateUserByParams(id, Collections.singletonMap("isApplicationFavorite", true));
+        } catch (ServiceException e) {
+            throw new ControllerException(e.getMessage());
+        }
+        return Collections.singletonMap("response", "success");
     }
 
     @PostMapping("/send/{id}")
     private Map<String, String> sendMessage(@RequestParam String message, @RequestParam String token, @PathVariable Long id)
             throws ControllerException {
-        Map<String, String> response = new HashMap<>();
         try {
             userService.sendMessage(message, token, id);
         } catch (ServiceException e) {
             throw new ControllerException(e.getMessage());
         }
-        response.put("response", "success");
-        return response;
+        return Collections.singletonMap("response", "success");
     }
 
     @PostMapping("/addFriend/{id}")
     private Map<String, String> addFriend(@RequestParam(required = false) String message, @RequestParam String token, @PathVariable Long id)
             throws ControllerException {
-        Map<String, String> response = new HashMap<>();
         try {
             userService.addFriend(message, token, id);
         } catch (ServiceException e) {
             throw new ControllerException(e.getMessage());
         }
-        response.put("response", "success");
-        return response;
+        return Collections.singletonMap("response", "success");
     }
 
     @PostMapping("/checkTokenValid")
     private Map<String, String> checkTokenValid(@RequestParam String token) {
-        Map<String, String> response = new HashMap<>();
         boolean isTokenValid = userService.checkTokenValid(token);
         if (isTokenValid) {
-            response.put("response", "valid");
-        } else {
-            response.put("response", "not_valid");
+            return Collections.singletonMap("response", "valid");
         }
-        return response;
+        return Collections.singletonMap("response", "not_valid");
     }
 }
