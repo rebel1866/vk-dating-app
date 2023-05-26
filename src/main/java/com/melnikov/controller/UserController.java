@@ -66,6 +66,8 @@ public class UserController {
         return Collections.singletonMap("response", "success");
     }
 
+    // getAppFavorites
+
     @PostMapping("/send/{id}")
     private Map<String, String> sendMessage(@RequestParam String message, @RequestParam String token, @PathVariable Long id)
             throws ControllerException {
