@@ -3,6 +3,7 @@ package com.melnikov.service.logic.impl;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.melnikov.dao.model.ClosedUser;
 import com.melnikov.dao.model.Photo;
+import com.melnikov.dao.model.Phrase;
 import com.melnikov.dao.model.User;
 import com.melnikov.dao.model.constant.Relation;
 import com.melnikov.dao.repository.ClosedUserRepository;
@@ -12,6 +13,7 @@ import com.melnikov.service.constant.VkDatingAppConstants;
 import com.melnikov.service.dto.UserDto;
 import com.melnikov.service.exception.ServiceException;
 import com.melnikov.service.logic.NameService;
+import com.melnikov.service.logic.PhraseService;
 import com.melnikov.service.logic.UserService;
 import com.melnikov.service.vo.*;
 import com.melnikov.util.DateUtil;
@@ -47,6 +49,7 @@ public class UserServiceImpl implements UserService {
     private JsonParser<UserGetVoWrapper> jsonParserUser;
     private UserRepository userRepository;
     private NameService nameService;
+    private PhraseService phraseService;
     private ClosedUserRepository closedUserRepository;
     private UserCustomRepository userCustomRepository;
     private final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
@@ -82,13 +85,14 @@ public class UserServiceImpl implements UserService {
     public UserServiceImpl(JsonParser<SearchUserResponseWrapperVo<UserVo>> jsonParserUsers,
                            JsonParser<SearchUserResponseWrapperVo<PhotoVo>> jsonParserPhotos,
                            JsonParser<UserGetVoWrapper> jsonParserUser, UserRepository userRepository,
-                           NameService nameService, ClosedUserRepository closedUserRepository,
+                           NameService nameService, PhraseService phraseService, ClosedUserRepository closedUserRepository,
                            UserCustomRepository userCustomRepository, ThreadPool threadPool) {
         this.jsonParserUsers = jsonParserUsers;
         this.jsonParserPhotos = jsonParserPhotos;
         this.jsonParserUser = jsonParserUser;
         this.userRepository = userRepository;
         this.nameService = nameService;
+        this.phraseService = phraseService;
         this.closedUserRepository = closedUserRepository;
         this.userCustomRepository = userCustomRepository;
         this.threadPool = threadPool;
@@ -524,5 +528,17 @@ public class UserServiceImpl implements UserService {
             return false;
         }
         return !response.contains("error");
+    }
+
+    @Override
+    public void sendPhraseById(String token, Long id, Integer phraseId) throws ServiceException {
+        Phrase phrase = phraseService.getPhraseById(phraseId);
+        sendMessage(phrase.getPhraseText(), token, id);
+    }
+
+    @Override
+    public void sendRandomPhrase(String token, Long id) throws ServiceException {
+        Phrase phrase = phraseService.getRandomPhrase();
+        sendMessage(phrase.getPhraseText(),token,id);
     }
 }

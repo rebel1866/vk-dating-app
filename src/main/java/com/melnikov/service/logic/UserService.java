@@ -23,4 +23,8 @@ public interface UserService {
     void addFriend(String message, String token, Long id) throws ServiceException;
 
     boolean checkTokenValid(String token);
+
+    void sendRandomPhrase(String token, Long id) throws ServiceException;
+
+    void sendPhraseById(String token, Long id, Integer phraseId) throws ServiceException;
 }
