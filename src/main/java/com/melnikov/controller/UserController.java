@@ -8,11 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@RestController()
+@RestController
 @RequestMapping("/users")
 public class UserController {
     private UserService userService;
@@ -67,49 +66,7 @@ public class UserController {
     }
 
     // getAppFavorites
-
-    @PostMapping("/send/{id}")
-    private Map<String, String> sendMessage(@RequestParam String message, @RequestParam String token, @PathVariable Long id)
-            throws ControllerException {
-        try {
-            userService.sendMessage(message, token, id);
-        } catch (ServiceException e) {
-            throw new ControllerException(e.getMessage());
-        }
-        return Collections.singletonMap("response", "success");
-    }
-
-    @PostMapping("/send/{id}/phrases")
-    private Map<String, String> sendRandomPhrase(@RequestParam String token, @PathVariable Long id)
-            throws ControllerException {
-        try {
-            userService.sendRandomPhrase(token, id);
-        } catch (ServiceException e) {
-            throw new ControllerException(e.getMessage());
-        }
-        return Collections.singletonMap("response", "success");
-    }
-    @PostMapping("/send/{id}/phrases/{phraseId}")
-    private Map<String, String> sendPhraseById(@RequestParam String token, @PathVariable Long id, @PathVariable Integer phraseId)
-            throws ControllerException {
-        try {
-            userService.sendPhraseById(token, id, phraseId);
-        } catch (ServiceException e) {
-            throw new ControllerException(e.getMessage());
-        }
-        return Collections.singletonMap("response", "success");
-    }
-
-    @PostMapping("/addFriend/{id}")
-    private Map<String, String> addFriend(@RequestParam(required = false) String message, @RequestParam String token, @PathVariable Long id)
-            throws ControllerException {
-        try {
-            userService.addFriend(message, token, id);
-        } catch (ServiceException e) {
-            throw new ControllerException(e.getMessage());
-        }
-        return Collections.singletonMap("response", "success");
-    }
+    // TODO: 1.06.23  
 
     @PostMapping("/checkTokenValid")
     private Map<String, String> checkTokenValid(@RequestParam String token) {

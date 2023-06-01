@@ -17,14 +17,5 @@ public interface UserService {
     void updateUserByParams(Long id, Map<String, Object> params) throws ServiceException;
 
     void startAmountChecking();
-
-    void sendMessage(String message, String token, Long id) throws ServiceException;
-
-    void addFriend(String message, String token, Long id) throws ServiceException;
-
     boolean checkTokenValid(String token);
-
-    void sendRandomPhrase(String token, Long id) throws ServiceException;
-
-    void sendPhraseById(String token, Long id, Integer phraseId) throws ServiceException;
 }
