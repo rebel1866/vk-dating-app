@@ -75,6 +75,8 @@ public class UserServiceImpl implements UserService {
 
     @Value("${account.for.checking.token}")
     private Long accountForCheckingTokenId;
+    @Value("${default.timeout}")
+    private Long timeout;
 
     private final AtomicBoolean isContinue = new AtomicBoolean();
 
@@ -207,7 +209,7 @@ public class UserServiceImpl implements UserService {
             for (User user : usersWithPhotos) {
                 try {
                     setPhotos(user);
-                    TimeUnit.MILLISECONDS.sleep(700);
+                    TimeUnit.MILLISECONDS.sleep(timeout);
                 } catch (ServiceException | InterruptedException e) {
                     logger.error(String.format("Error while trying to set photos for user with id %s : %s",
                             user.getId(), e.getMessage()));
@@ -218,6 +220,18 @@ public class UserServiceImpl implements UserService {
             logger.info("Photos have been set.");
             usersWithPhotos = filterUsersByPhotoAmount(usersWithPhotos);
             logger.info("Filtered users by photo amount, result list size: " + usersWithPhotos.size());
+            for (User user : usersWithPhotos) {
+                try {
+                    setFriends(user);
+                    TimeUnit.MILLISECONDS.sleep(timeout);
+                } catch (ServiceException | InterruptedException e) {
+                    logger.error(String.format("Error while trying to set friends for user with id %s : %s",
+                            user.getId(), e.getMessage()));
+                    comments.add("Failed to set friends for user with id: " + user.getId());
+                }
+            }
+            usersWithPhotos = filterByFriendsAmount(usersWithPhotos);
+            logger.info("Set friends and Filtered users by friends amount, result list size: " + usersWithPhotos.size());
             userRepository.saveAll(usersWithPhotos);
             logger.info("Saved all.");
             userList.addAll(usersWithPhotos);
@@ -235,6 +249,25 @@ public class UserServiceImpl implements UserService {
             executionInfo.append("\n");
         });
         logger.info(executionInfo.toString());
+    }
+
+    private List<User> filterByFriendsAmount(List<User> usersWithPhotos) {
+        return usersWithPhotos.stream().filter(user -> user.getFriendsAmount() <= friendDefaultAmount).collect(Collectors.toList());
+    }
+
+    // TODO: 1.06.23 доделать фильтр по друзьям
+    private void setFriends(User user) throws ServiceException {
+            String response;
+            Map<String, String> params = new HashMap<>();
+            params.put("user_id", user.getId().toString());
+            params.put("access_token", VkDatingAppConstants.ACCESS_TOKEN);
+            params.put("v", VkDatingAppConstants.API_VERSION);
+            try {
+                response = HttpClient.sendPOST("https://api.vk.com/method/friends.get", params);
+            } catch (IOException e) {
+                logger.error("Error while trying to make request for photos and/or parse it: " + e.getMessage());
+                throw new ServiceException(e.getMessage());
+            }
     }
 
     private boolean isThreeErrorsOneAfterAnother(int currentIteration, Map<Integer, ExecutionRecord> executionJournal) {

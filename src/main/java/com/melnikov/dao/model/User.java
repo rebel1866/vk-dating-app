@@ -31,4 +31,5 @@ public class User {
     private Boolean isApplicationFavorite;
     private UserDescription userDescription;
     private List<Photo> photos;
+    private int friendsAmount;
 }
