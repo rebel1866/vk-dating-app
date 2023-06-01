@@ -18,4 +18,6 @@ public interface UserService {
 
     void startAmountChecking();
     boolean checkTokenValid(String token);
+
+    List<UserDto> getFavorites() throws ServiceException;
 }

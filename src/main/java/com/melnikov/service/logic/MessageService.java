@@ -15,4 +15,8 @@ public interface MessageService {
     void sendPhraseById(String token, Long id, Integer phraseId) throws ServiceException;
 
     void sendRandomPhrase(String token, Long id) throws ServiceException;
+
+    void removePhrase(Integer id) throws ServiceException;
+
+    void addPhrase(String phraseText) throws ServiceException;
 }

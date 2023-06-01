@@ -9,6 +9,7 @@ import com.melnikov.util.HttpClient;
 import com.melnikov.util.JsonParser;
 import com.melnikov.util.Random;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -36,12 +37,23 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public Phrase getPhraseById(Integer phraseId) throws ServiceException{
-        return phraseRepository.findById(phraseId).orElseThrow(()-> new ServiceException("No phrase found by id"));
+    public Phrase getPhraseById(Integer phraseId) throws ServiceException {
+        return phraseRepository.findById(phraseId).orElseThrow(() -> new ServiceException("No phrase found by id"));
     }
-    //addPhrase
-    //remove
-    // TODO: 1.06.23  
+
+    @Override
+    public void addPhrase(String phraseText) throws ServiceException {
+        Phrase phrase = new Phrase();
+        Phrase lastPhrase = phraseRepository.findFirstByOrderByIdDesc();
+        phrase.setPhraseText(phraseText);
+        phrase.setId(lastPhrase == null ? 1 : lastPhrase.getId());
+        phraseRepository.save(phrase);
+    }
+
+    @Override
+    public void removePhrase(Integer id) throws ServiceException {
+        phraseRepository.deleteById(id);
+    }
 
     @Override
     public void sendMessage(String message, String token, Long id) throws ServiceException {
@@ -89,6 +101,7 @@ public class MessageServiceImpl implements MessageService {
             throw new ServiceException(eMessage + " User id: " + id);
         }
     }
+
     @Override
     public void sendPhraseById(String token, Long id, Integer phraseId) throws ServiceException {
         Phrase phrase = getPhraseById(phraseId);
@@ -98,6 +111,6 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public void sendRandomPhrase(String token, Long id) throws ServiceException {
         Phrase phrase = getRandomPhrase();
-        sendMessage(phrase.getPhraseText(),token,id);
+        sendMessage(phrase.getPhraseText(), token, id);
     }
 }

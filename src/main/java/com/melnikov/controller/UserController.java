@@ -65,8 +65,14 @@ public class UserController {
         return Collections.singletonMap("response", "success");
     }
 
-    // getAppFavorites
-    // TODO: 1.06.23  
+    @GetMapping("/favorites")
+    private List<UserDto> getFavorites() throws ControllerException {
+        try {
+            return userService.getFavorites();
+        } catch (ServiceException e) {
+            throw new ControllerException(e.getMessage());
+        }
+    }
 
     @PostMapping("/checkTokenValid")
     private Map<String, String> checkTokenValid(@RequestParam String token) {

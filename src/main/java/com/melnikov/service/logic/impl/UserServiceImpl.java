@@ -332,6 +332,7 @@ public class UserServiceImpl implements UserService {
                 return false;
             }
         }
+        // TODO: 1.06.23 add filters
         updateBasicUserFields(user, userUpd);
         return true;
     }
@@ -481,5 +482,14 @@ public class UserServiceImpl implements UserService {
             return false;
         }
         return !response.contains("error");
+    }
+
+    @Override
+    public List<UserDto> getFavorites() throws ServiceException {
+        List<User> userList = userRepository.findByIsApplicationFavorite(true);
+        if (userList.size() == 0) {
+            throw new ServiceException("Nothing found");
+        }
+        return userList.stream().map(UserModelToDtoConverter::convert).collect(Collectors.toList());
     }
 }

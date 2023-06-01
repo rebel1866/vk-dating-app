@@ -62,5 +62,24 @@ public class MessageController {
         }
         return Collections.singletonMap("response", "success");
     }
+    @DeleteMapping("phrases/{id}")
+    private Map<String, String> removePhrase(@PathVariable Integer id) throws ControllerException {
+        try {
+            messageService.removePhrase(id);
+        } catch (ServiceException e) {
+            throw new ControllerException(e.getMessage());
+        }
+        return Collections.singletonMap("response", "success");
+    }
+
+    @PostMapping("phrases")
+    private Map<String,String> addPhrase(@RequestParam String phraseText) throws ControllerException {
+        try {
+            messageService.addPhrase(phraseText);
+        } catch (ServiceException e) {
+            throw new ControllerException(e.getMessage());
+        }
+        return Collections.singletonMap("response", "success");
+    }
 
 }
