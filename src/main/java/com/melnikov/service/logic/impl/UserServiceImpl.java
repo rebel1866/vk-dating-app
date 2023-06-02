@@ -531,11 +531,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void addVkFavorite(Long id, String accessToken) throws ServiceException {
+    public void addVkFavorite(Long id) throws ServiceException {
         String response;
         Map<String, String> params = new HashMap<>();
         params.put("user_id", id.toString());
-        params.put("access_token", accessToken);
+        params.put("access_token", VkDatingAppConstants.ACCESS_TOKEN_STANDALONE);
         params.put("v", VkDatingAppConstants.API_VERSION);
         try {
             response = HttpClient.sendPOST("https://api.vk.com/method/fave.addPage", params);

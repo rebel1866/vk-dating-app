@@ -22,5 +22,5 @@ public interface UserService {
     List<UserDto> getFavorites() throws ServiceException;
 
 
-    void addVkFavorite(Long id, String accessToken) throws ServiceException;
+    void addVkFavorite(Long id) throws ServiceException;
 }

@@ -11,4 +11,7 @@ public class VkDatingAppConstants {
     public static final String ACCESS_TOKEN = "vk1.a.Smf66zxb730o8G7bW2CCaO2q_JGGZGuqBFKntjiJGeFz1gvxxZJwfasiCQo765W-" +
             "pW7A2BsBLrWtYdIjCoEuwg5aci-YEzqm5w6cdCpPOIWZEh-qzUNb6q7hvj2EL4f5-gb-THlAu9VKZw-Lkd59sqO4xPIIAa16nCos6yIi" +
             "WQv6098anJNrJ5dZbcg26OyCz0gi8j41zpZG6CghYbu3uw";
+    public static final String  ACCESS_TOKEN_STANDALONE = "vk1.a.fAST-7hXTS9479OZdg26wUiROopSEidq4UJdUlwNFzqGQg3cPFueMn" +
+            "lD7jqVEcRhMwecSF7C7h3dNsIews546cMR16-oxIe5SMnKmJQBFXoqIBf7DR8gwtqLc0a6kW-piN6VMfck8JajS_i7qgyzfnR_3qTBA_zw" +
+            "bs9hxt81qqyA4YGRkYHipFVjo-hHY1P9CQugwHL1BW82bC2nM1iVgA";
 }

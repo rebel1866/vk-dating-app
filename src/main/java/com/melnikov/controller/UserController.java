@@ -75,9 +75,9 @@ public class UserController {
     }
 
     @GetMapping("/vkFavorites/{id}")
-    private Map<String, String> addVkFavorite(@PathVariable Long id, @RequestParam String accessToken) throws ControllerException {
+    private Map<String, String> addVkFavorite(@PathVariable Long id) throws ControllerException {
         try {
-            userService.addVkFavorite(id, accessToken);
+            userService.addVkFavorite(id);
         } catch (ServiceException e) {
             throw new ControllerException(e.getMessage());
         }
