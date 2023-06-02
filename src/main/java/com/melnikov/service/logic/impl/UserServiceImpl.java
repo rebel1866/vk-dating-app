@@ -529,4 +529,21 @@ public class UserServiceImpl implements UserService {
         }
         return userList.stream().map(UserModelToDtoConverter::convert).collect(Collectors.toList());
     }
+
+    @Override
+    public void addVkFavorite(Long id, String accessToken) throws ServiceException {
+        String response;
+        Map<String, String> params = new HashMap<>();
+        params.put("user_id", id.toString());
+        params.put("access_token", accessToken);
+        params.put("v", VkDatingAppConstants.API_VERSION);
+        try {
+            response = HttpClient.sendPOST("https://api.vk.com/method/fave.addPage", params);
+        } catch (IOException e) {
+            throw new ServiceException("Could not add user to favorites.");
+        }
+        if (response.contains("error")) {
+            throw new ServiceException("Could not add user to favorites.");
+        }
+    }
 }

@@ -72,7 +72,17 @@ public class UserController {
         } catch (ServiceException e) {
             throw new ControllerException(e.getMessage());
         }
-    } // TODO: 2.06.23 pagination
+    }
+
+    @GetMapping("/vkFavorites/{id}")
+    private Map<String, String> addVkFavorite(@PathVariable Long id, @RequestParam String accessToken) throws ControllerException {
+        try {
+            userService.addVkFavorite(id, accessToken);
+        } catch (ServiceException e) {
+            throw new ControllerException(e.getMessage());
+        }
+        return Collections.singletonMap("response", "success");
+    }
 
     @PostMapping("/checkTokenValid")
     private Map<String, String> checkTokenValid(@RequestParam String token) {

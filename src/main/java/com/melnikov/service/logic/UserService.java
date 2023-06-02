@@ -20,4 +20,7 @@ public interface UserService {
     boolean checkTokenValid(String token);
 
     List<UserDto> getFavorites() throws ServiceException;
+
+
+    void addVkFavorite(Long id, String accessToken) throws ServiceException;
 }
