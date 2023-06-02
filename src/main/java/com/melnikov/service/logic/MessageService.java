@@ -3,6 +3,8 @@ package com.melnikov.service.logic;
 import com.melnikov.dao.model.Phrase;
 import com.melnikov.service.exception.ServiceException;
 
+import java.util.List;
+
 public interface MessageService {
     Phrase getRandomPhrase() throws ServiceException;
 
@@ -19,4 +21,6 @@ public interface MessageService {
     void removePhrase(Integer id) throws ServiceException;
 
     void addPhrase(String phraseText) throws ServiceException;
+
+    List<Phrase> getAllPhrases() throws ServiceException;
 }

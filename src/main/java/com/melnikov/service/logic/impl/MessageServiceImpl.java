@@ -112,4 +112,13 @@ public class MessageServiceImpl implements MessageService {
         Phrase phrase = getRandomPhrase();
         sendMessage(phrase.getPhraseText(), token, id);
     }
+
+    @Override
+    public List<Phrase> getAllPhrases() throws ServiceException {
+        List<Phrase> phrases = phraseRepository.findAll();
+        if (phrases.size() == 0) {
+            throw new ServiceException("No phrases found");
+        }
+        return phrases;
+    }
 }

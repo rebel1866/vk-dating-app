@@ -72,7 +72,7 @@ public class UserController {
         } catch (ServiceException e) {
             throw new ControllerException(e.getMessage());
         }
-    }
+    } // TODO: 2.06.23 pagination
 
     @PostMapping("/checkTokenValid")
     private Map<String, String> checkTokenValid(@RequestParam String token) {

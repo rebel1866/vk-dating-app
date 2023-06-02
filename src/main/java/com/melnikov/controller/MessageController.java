@@ -1,12 +1,14 @@
 package com.melnikov.controller;
 
 import com.melnikov.controller.exception.ControllerException;
+import com.melnikov.dao.model.Phrase;
 import com.melnikov.service.exception.ServiceException;
 import com.melnikov.service.logic.MessageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 @RestController
 @RequestMapping("/messages")
@@ -80,6 +82,14 @@ public class MessageController {
             throw new ControllerException(e.getMessage());
         }
         return Collections.singletonMap("response", "success");
+    }
+    @GetMapping("phrases")
+    private List<Phrase> getAllPhrases() throws ControllerException {
+        try {
+          return messageService.getAllPhrases();
+        } catch (ServiceException e) {
+            throw new ControllerException(e.getMessage());
+        }
     }
 
 }
