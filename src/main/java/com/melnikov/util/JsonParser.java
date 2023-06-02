@@ -17,11 +17,19 @@ public class JsonParser<T> {
         return objectMapper.readValue(source, typeReference);
     }
 
-    public static String getValue(String json, String key) throws IOException {
+    public static String getStringValue(String json, String key) throws IOException {
         ObjectNode node = objectMapper.readValue(json, ObjectNode.class);
         JsonNode result = node.findValue(key);
         if (result != null) {
             return result.textValue();
+        }
+        throw new IOException("Value by key not found. Key: " + key);
+    }
+    public static int getIntegerValue(String json, String key) throws IOException {
+        ObjectNode node = objectMapper.readValue(json, ObjectNode.class);
+        JsonNode result = node.findValue(key);
+        if (result != null) {
+            return result.intValue();
         }
         throw new IOException("Value by key not found. Key: " + key);
     }

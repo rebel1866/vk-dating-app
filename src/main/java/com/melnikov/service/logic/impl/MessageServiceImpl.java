@@ -9,7 +9,6 @@ import com.melnikov.util.HttpClient;
 import com.melnikov.util.JsonParser;
 import com.melnikov.util.Random;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -94,7 +93,7 @@ public class MessageServiceImpl implements MessageService {
         if (response.contains("error")) {
             String eMessage;
             try {
-                eMessage = JsonParser.getValue(response, "error_msg");
+                eMessage = JsonParser.getStringValue(response, "error_msg");
             } catch (IOException e) {
                 throw new ServiceException(message + id);
             }

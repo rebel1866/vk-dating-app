@@ -3,7 +3,6 @@ package com.melnikov.service.logic.impl;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.melnikov.dao.model.ClosedUser;
 import com.melnikov.dao.model.Photo;
-import com.melnikov.dao.model.Phrase;
 import com.melnikov.dao.model.User;
 import com.melnikov.dao.model.constant.Relation;
 import com.melnikov.dao.repository.ClosedUserRepository;
@@ -13,13 +12,11 @@ import com.melnikov.service.constant.VkDatingAppConstants;
 import com.melnikov.service.dto.UserDto;
 import com.melnikov.service.exception.ServiceException;
 import com.melnikov.service.logic.NameService;
-import com.melnikov.service.logic.MessageService;
 import com.melnikov.service.logic.UserService;
 import com.melnikov.service.vo.*;
 import com.melnikov.util.DateUtil;
 import com.melnikov.util.HttpClient;
 import com.melnikov.util.JsonParser;
-import com.melnikov.util.Random;
 import com.melnikov.util.ThreadPool;
 import com.melnikov.util.converter.UserModelToDtoConverter;
 import com.melnikov.util.converter.UserVoToModelConverter;
@@ -83,6 +80,7 @@ public class UserServiceImpl implements UserService {
 
     private final ThreadPool threadPool;
 
+    // TODO: 2.06.23 extend addNames.js
     @Autowired
     public UserServiceImpl(JsonParser<SearchUserResponseWrapperVo<UserVo>> jsonParserUsers,
                            JsonParser<SearchUserResponseWrapperVo<PhotoVo>> jsonParserPhotos,
@@ -269,8 +267,7 @@ public class UserServiceImpl implements UserService {
             throw new ServiceException(e.getMessage());
         }
         try {
-            String amountStr = JsonParser.getValue(response, "count");
-            int amount = Integer.parseInt(amountStr);
+            int amount = JsonParser.getIntegerValue(response, "count");
             user.setFriendsAmount(amount);
         } catch (Exception e) {
             logger.error("Error while trying to make request for friends amount and/or parse it: " + e.getMessage());
@@ -339,6 +336,7 @@ public class UserServiceImpl implements UserService {
 
     private boolean isStillActual(User user) {
         long periodDays = TimeUnit.MILLISECONDS.toDays(Duration.between(user.getSavingTime(), LocalDateTime.now()).toMillis());
+        // TODO: 2.06.23 lastseenupdate
         if (periodDays < amountDaysForRefresh) {
             return true;
         }
