@@ -5,17 +5,24 @@ import com.melnikov.dao.repository.NameRepository;
 import com.melnikov.service.exception.ServiceException;
 import com.melnikov.service.logic.NameService;
 import com.melnikov.service.vo.ApiSearchRequestVo;
+import com.melnikov.service.vo.Zodiac;
 import com.melnikov.util.Random;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
 public class NameServiceImpl implements NameService {
+    @Value("${zodiacs}")
+    private String zodiacs;
+
+    private List<Zodiac> zodiacList;
 
     private final Logger logger = LoggerFactory.getLogger(NameServiceImpl.class);
 
@@ -27,6 +34,13 @@ public class NameServiceImpl implements NameService {
     public NameServiceImpl(NameRepository nameRepository) {
         this.nameRepository = nameRepository;
         initConstants();
+    }
+
+    private void initZodiacs() {
+        Arrays.stream(zodiacs.split(",")).map(String::trim).forEach(zodiac -> {
+            Zodiac zodiacObj = Zodiac.valueOf(zodiac.toUpperCase());
+            zodiacList.add(zodiacObj);
+        });
     }
 
     private void initConstants() {
@@ -55,6 +69,10 @@ public class NameServiceImpl implements NameService {
         List<Name> nameList = nameRepository.findByIsUsed(false);
         if (nameList.size() == 0) {
             throw new ServiceException("All names have been used");
+        }
+        if (zodiacList == null) {
+            zodiacList = new ArrayList<>();
+            initZodiacs();
         }
         int random = (int) Random.getRandom(0, nameList.size() - 1);
         Name name = nameList.get(random);
