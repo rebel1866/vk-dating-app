@@ -31,6 +31,6 @@ public class UserModelToDtoConverter {
                 smoking(user.getUserDescription().getSmoking()).religion(user.getUserDescription().getReligion()).
                 alcohol(user.getUserDescription().getAlcohol()).inspiredBy(user.getUserDescription().getInspiredBy()).
                 lifeMain(user.getUserDescription().getLifeMain()).relation(user.getUserDescription().getRelation()).
-                career(careersList).photos(photos).build();
+                career(careersList).photos(photos).friendsAmount(user.getFriendsAmount()).build();
     }
 }

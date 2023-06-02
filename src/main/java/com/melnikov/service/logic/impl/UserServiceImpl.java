@@ -77,7 +77,8 @@ public class UserServiceImpl implements UserService {
     private Long accountForCheckingTokenId;
     @Value("${default.timeout}")
     private Long timeout;
-
+    @Value("${friend.max.amount}")
+    private Integer friendMaxAmount;
     private final AtomicBoolean isContinue = new AtomicBoolean();
 
     private final ThreadPool threadPool;
@@ -252,22 +253,29 @@ public class UserServiceImpl implements UserService {
     }
 
     private List<User> filterByFriendsAmount(List<User> usersWithPhotos) {
-        return usersWithPhotos.stream().filter(user -> user.getFriendsAmount() <= friendDefaultAmount).collect(Collectors.toList());
+        return usersWithPhotos.stream().filter(user -> user.getFriendsAmount() <= friendMaxAmount).collect(Collectors.toList());
     }
 
-    // TODO: 1.06.23 доделать фильтр по друзьям
     private void setFriends(User user) throws ServiceException {
-            String response;
-            Map<String, String> params = new HashMap<>();
-            params.put("user_id", user.getId().toString());
-            params.put("access_token", VkDatingAppConstants.ACCESS_TOKEN);
-            params.put("v", VkDatingAppConstants.API_VERSION);
-            try {
-                response = HttpClient.sendPOST("https://api.vk.com/method/friends.get", params);
-            } catch (IOException e) {
-                logger.error("Error while trying to make request for photos and/or parse it: " + e.getMessage());
-                throw new ServiceException(e.getMessage());
-            }
+        String response;
+        Map<String, String> params = new HashMap<>();
+        params.put("user_id", user.getId().toString());
+        params.put("access_token", VkDatingAppConstants.ACCESS_TOKEN);
+        params.put("v", VkDatingAppConstants.API_VERSION);
+        try {
+            response = HttpClient.sendPOST("https://api.vk.com/method/friends.get", params);
+        } catch (IOException e) {
+            logger.error("Error while trying to make request for friends amount and/or parse it: " + e.getMessage());
+            throw new ServiceException(e.getMessage());
+        }
+        try {
+            String amountStr = JsonParser.getValue(response, "count");
+            int amount = Integer.parseInt(amountStr);
+            user.setFriendsAmount(amount);
+        } catch (Exception e) {
+            logger.error("Error while trying to make request for friends amount and/or parse it: " + e.getMessage());
+            throw new ServiceException(e.getMessage());
+        }
     }
 
     private boolean isThreeErrorsOneAfterAnother(int currentIteration, Map<Integer, ExecutionRecord> executionJournal) {
@@ -355,17 +363,16 @@ public class UserServiceImpl implements UserService {
             return false;
         }
         UserVo userUpd = userUpds.get(0);
-        if (!lastSeenFilter(userUpd) || !userUpd.getHasPhoto()) {
+        if (!lastSeenFilter(userUpd)) {
             userRepository.deleteById(userUpd.getId());
             return false;
         }
         if (!userUpd.getIsClosed()) {
-            if (!relationFilter(userUpd)) {
+            if (!relationFilter(userUpd) || !statusFilter(userUpd) || !childFilter(userUpd)) {
                 userRepository.deleteById(userUpd.getId());
                 return false;
             }
         }
-        // TODO: 1.06.23 add filters
         updateBasicUserFields(user, userUpd);
         return true;
     }
@@ -429,7 +436,6 @@ public class UserServiceImpl implements UserService {
                 filter(this::childFilter).
                 filter(this::statusFilter).
                 toList();
-        // TODO: 25/05/2023 friend amounts filter 
     }
 
     private boolean statusFilter(UserVo userVo) {

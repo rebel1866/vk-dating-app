@@ -41,7 +41,6 @@ public class UserDto {
     private String relation;
     private List<String> career;
     private List<String> photos;
+    private int friendsAmount;
     //last seen
-    // check/update lastSeen,hasphoto,isClosed,relation conditions and update some fields specified in User class
-
 }
