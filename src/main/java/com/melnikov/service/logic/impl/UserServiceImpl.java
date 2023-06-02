@@ -440,7 +440,7 @@ public class UserServiceImpl implements UserService {
         if (userVo.getStatus() != null && !userVo.getStatus().equals("")) {
             Pattern pattern = Pattern.compile("\\D*\\d{1,2}\\.\\d{1,2}\\.\\d{2,4}\\D*");
             Matcher matcher = pattern.matcher(userVo.getStatus());
-            return matcher.matches();
+            return !matcher.matches();
         }
         return true;
     }
