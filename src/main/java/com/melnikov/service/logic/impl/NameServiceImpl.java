@@ -13,14 +13,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.time.LocalDate;
+import java.util.*;
 
 @Service
 public class NameServiceImpl implements NameService {
     @Value("${zodiacs}")
     private String zodiacs;
+
+    private Map<String, List<String>> vacantZodiacDates;
 
     private List<Zodiac> zodiacList;
 
@@ -37,10 +38,38 @@ public class NameServiceImpl implements NameService {
     }
 
     private void initZodiacs() {
+        zodiacList = new ArrayList<>();
         Arrays.stream(zodiacs.split(",")).map(String::trim).forEach(zodiac -> {
             Zodiac zodiacObj = Zodiac.valueOf(zodiac.toUpperCase());
             zodiacList.add(zodiacObj);
         });
+        vacantZodiacDates = new HashMap<>();
+        List<Name> nameList = nameRepository.findByIsUsed(false);
+        for (Name name : nameList) {
+            vacantZodiacDates.put(name.getName(), getVacantZodiacDatesForName(name));
+        }
+    }// TODO: 05/06/2023
+    private List<String> getVacantZodiacDatesForName(Name name) {
+        List<String> birthDatesForName = name.getBirthDates();
+        List<String> vacantZodiacDatesForName = new ArrayList<>();
+        for (Zodiac zodiac : zodiacList) {
+            List<String> temp = new ArrayList<>();
+            LocalDate startDate = toLocalDate(zodiac.getStartDate());
+            LocalDate endDate = toLocalDate(zodiac.getEndDate());
+            for (String date : birthDatesForName) {
+              LocalDate current  = toLocalDate(date);
+                if (startDate.isBefore(current) && endDate.isAfter(current)) {
+                    temp.add(date);
+                }
+            }
+            vacantZodiacDatesForName.addAll(temp);
+        }
+        return vacantZodiacDatesForName;
+    }
+
+    private LocalDate toLocalDate(String date) {
+        String[] arr = date.split("\\.");
+        return LocalDate.of(2000, Integer.parseInt(arr[1]), Integer.parseInt(arr[0]));
     }
 
     private void initConstants() {
@@ -66,13 +95,12 @@ public class NameServiceImpl implements NameService {
 
     @Override
     public ApiSearchRequestVo getRequestVo() throws ServiceException {
+        if (isPreferredZodiacsPresent()) {
+            return getRequestVoByPreferredZodiacs();
+        }
         List<Name> nameList = nameRepository.findByIsUsed(false);
         if (nameList.size() == 0) {
             throw new ServiceException("All names have been used");
-        }
-        if (zodiacList == null) {
-            zodiacList = new ArrayList<>();
-            initZodiacs();
         }
         int random = (int) Random.getRandom(0, nameList.size() - 1);
         Name name = nameList.get(random);
@@ -90,5 +118,17 @@ public class NameServiceImpl implements NameService {
         name.getBirthDates().add(currentBirthDate);
         nameRepository.save(name);
         return new ApiSearchRequestVo(name.getName(), Byte.valueOf(dayMonth[0]), Byte.valueOf(dayMonth[1]));
+    }
+
+    private ApiSearchRequestVo getRequestVoByPreferredZodiacs() {
+        //remove from both prefered zodiaacs and add record to nameList
+        return null;
+    }
+
+    private boolean isPreferredZodiacsPresent() {
+        if (zodiacList == null) {
+            initZodiacs();
+        }
+        return !vacantZodiacDates.isEmpty();
     }
 }
