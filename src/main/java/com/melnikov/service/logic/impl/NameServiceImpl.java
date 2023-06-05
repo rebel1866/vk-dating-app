@@ -50,7 +50,7 @@ public class NameServiceImpl implements NameService {
         }
     }// TODO: 05/06/2023
     private List<String> getVacantZodiacDatesForName(Name name) {
-        List<String> birthDatesForName = name.getBirthDates();
+        List<String> birthDatesForName = name.getBirthDates(); // allbirthdates not name.getBirthDates();
         List<String> vacantZodiacDatesForName = new ArrayList<>();
         for (Zodiac zodiac : zodiacList) {
             List<String> temp = new ArrayList<>();
