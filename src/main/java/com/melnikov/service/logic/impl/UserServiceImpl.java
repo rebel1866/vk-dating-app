@@ -473,6 +473,7 @@ public class UserServiceImpl implements UserService {
         if (userVo.getLastSeen() == null) {
             return false;
         }
+//        if have inst -> another amountdayslastseen // TODO: 07/06/2023
         long unixTimeNow = Instant.now().getEpochSecond();
         long timeLastSeenUnix = userVo.getLastSeen().getTime();
         return (unixTimeNow - timeLastSeenUnix) <= (amountDaysLastSeen * 24 * 60 * 60);
