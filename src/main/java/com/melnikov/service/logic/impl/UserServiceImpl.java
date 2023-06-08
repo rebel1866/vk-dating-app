@@ -15,7 +15,8 @@ import com.melnikov.service.logic.NameService;
 import com.melnikov.service.logic.UserService;
 import com.melnikov.service.vo.*;
 import com.melnikov.util.DateUtil;
-import com.melnikov.util.HttpClient;
+
+import static com.melnikov.util.HttpClient.sendPOST;
 import com.melnikov.util.JsonParser;
 import com.melnikov.util.ThreadPool;
 import com.melnikov.util.converter.UserModelToDtoConverter;
@@ -168,7 +169,7 @@ public class UserServiceImpl implements UserService {
             SearchUserResponseWrapperVo<UserVo> responseWrapperVO;
             logger.info("Sending request.");
             try {
-                response = HttpClient.sendPOST("https://api.vk.com/method/users.search", params);
+                response = sendPOST("https://api.vk.com/method/users.search", params);
                 logger.info("Got response. Parsing.");
                 response = response.replaceAll("personal\":\\[\\]", "personal\":{}");
                 responseWrapperVO = jsonParserUsers.parseJson(response, new TypeReference<>() {
@@ -261,7 +262,7 @@ public class UserServiceImpl implements UserService {
         params.put("access_token", VkDatingAppConstants.ACCESS_TOKEN);
         params.put("v", VkDatingAppConstants.API_VERSION);
         try {
-            response = HttpClient.sendPOST("https://api.vk.com/method/friends.get", params);
+            response = sendPOST("https://api.vk.com/method/friends.get", params);
         } catch (IOException e) {
             logger.error("Error while trying to make request for friends amount and/or parse it: " + e.getMessage());
             throw new ServiceException(e.getMessage());
@@ -348,7 +349,7 @@ public class UserServiceImpl implements UserService {
         params.put("v", VkDatingAppConstants.API_VERSION);
         UserGetVoWrapper userGetVoWrapper;
         try {
-            response = HttpClient.sendPOST("https://api.vk.com/method/users.get", params);
+            response = sendPOST("https://api.vk.com/method/users.get", params);
             response = response.replaceAll("personal\":\\[\\]", "personal\":{}");
             userGetVoWrapper = jsonParserUser.parseJson(response, new TypeReference<>() {
             });
@@ -396,7 +397,7 @@ public class UserServiceImpl implements UserService {
         params.put("access_token", VkDatingAppConstants.ACCESS_TOKEN);
         params.put("v", VkDatingAppConstants.API_VERSION);
         try {
-            response = HttpClient.sendPOST("https://api.vk.com/method/photos.getAll", params);
+            response = sendPOST("https://api.vk.com/method/photos.getAll", params);
             responseWrapperVO = jsonParserPhotos.parseJson(response, new TypeReference<>() {
             });
         } catch (IOException e) {
@@ -514,7 +515,7 @@ public class UserServiceImpl implements UserService {
         params.put("access_token", token);
         params.put("v", VkDatingAppConstants.API_VERSION);
         try {
-            response = HttpClient.sendPOST("https://api.vk.com/method/users.get", params);
+            response = sendPOST("https://api.vk.com/method/users.get", params);
         } catch (IOException e) {
             logger.error("Could not send request for token checking");
             return false;
@@ -539,7 +540,7 @@ public class UserServiceImpl implements UserService {
         params.put("access_token", VkDatingAppConstants.ACCESS_TOKEN_STANDALONE);
         params.put("v", VkDatingAppConstants.API_VERSION);
         try {
-            response = HttpClient.sendPOST("https://api.vk.com/method/fave.addPage", params);
+            response = sendPOST("https://api.vk.com/method/fave.addPage", params);
         } catch (IOException e) {
             throw new ServiceException("Could not add user to favorites.");
         }
