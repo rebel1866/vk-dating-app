@@ -48,17 +48,19 @@ public class NameServiceImpl implements NameService {
         for (Name name : nameList) {
             vacantZodiacDates.put(name.getName(), getVacantZodiacDatesForName(name));
         }
-    }// TODO: 05/06/2023
+    }
     private List<String> getVacantZodiacDatesForName(Name name) {
-        List<String> birthDatesForName = name.getBirthDates(); // allbirthdates not name.getBirthDates();
+        List<String> birthDatesForName = name.getBirthDates();
         List<String> vacantZodiacDatesForName = new ArrayList<>();
+        List<String> allBirthDatesClone = new ArrayList<>(allBirthDates);
+        allBirthDatesClone.removeAll(birthDatesForName);
         for (Zodiac zodiac : zodiacList) {
             List<String> temp = new ArrayList<>();
             LocalDate startDate = toLocalDate(zodiac.getStartDate());
             LocalDate endDate = toLocalDate(zodiac.getEndDate());
-            for (String date : birthDatesForName) {
+            for (String date : allBirthDatesClone) {
               LocalDate current  = toLocalDate(date);
-                if (startDate.isBefore(current) && endDate.isAfter(current)) {
+                if ((startDate.isBefore(current) || startDate.equals(current)) && (endDate.isAfter(current)|| endDate.equals(current))) {
                     temp.add(date);
                 }
             }
@@ -96,7 +98,12 @@ public class NameServiceImpl implements NameService {
     @Override
     public ApiSearchRequestVo getRequestVo() throws ServiceException {
         if (isPreferredZodiacsPresent()) {
-            return getRequestVoByPreferredZodiacs();
+            try {
+                return getRequestVoByPreferredZodiacs();
+            } catch (ServiceException e) {
+                logger.error("Cannot generate requestvo by preferred zodiacs. " + e.getMessage());
+                throw new ServiceException("Cannot generate requestvo by preferred zodiacs. " + e.getMessage());
+            }
         }
         List<Name> nameList = nameRepository.findByIsUsed(false);
         if (nameList.size() == 0) {
@@ -120,9 +127,34 @@ public class NameServiceImpl implements NameService {
         return new ApiSearchRequestVo(name.getName(), Byte.valueOf(dayMonth[0]), Byte.valueOf(dayMonth[1]));
     }
 
-    private ApiSearchRequestVo getRequestVoByPreferredZodiacs() {
-        //remove from both prefered zodiaacs and add record to nameList
-        return null;
+    private ApiSearchRequestVo getRequestVoByPreferredZodiacs() throws ServiceException {
+        int count = 0;
+        int random = (int) Random.getRandom(0, vacantZodiacDates.size() - 1);
+        Map.Entry<String, List<String>> entry = null;
+        Iterator<Map.Entry<String, List<String>>> iterator = vacantZodiacDates.entrySet().iterator();
+        while (iterator.hasNext()) {
+            if (count == random) {
+                entry = iterator.next();
+                break;
+            }
+            count++;
+        }
+        if (entry == null) {
+            throw new ServiceException("Entry is null");
+        }
+        List<String> dates = entry.getValue();
+        int random2 = (int) Random.getRandom(0, dates.size() - 1);
+        String birthDay = dates.get(random2);
+        String [] arr = birthDay.split("\\.");
+        List<String> nameBDates = vacantZodiacDates.get(entry.getKey());
+        nameBDates.remove(birthDay);
+        if (nameBDates.isEmpty()) {
+            vacantZodiacDates.remove(entry.getKey());
+        }
+        Name name = nameRepository.findByName(entry.getKey());
+        name.getBirthDates().add(birthDay);
+        nameRepository.save(name);
+        return new ApiSearchRequestVo(entry.getKey(), Byte.valueOf(arr[0]), Byte.valueOf(arr[1]));
     }
 
     private boolean isPreferredZodiacsPresent() {

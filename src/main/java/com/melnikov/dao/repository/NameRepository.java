@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface NameRepository extends MongoRepository<Name, String> {
     List<Name> findByIsUsed(Boolean isUsed);
+
+    Name findByName(String name);
 }
