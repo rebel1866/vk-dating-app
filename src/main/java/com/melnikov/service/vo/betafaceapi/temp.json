@@ -1,0 +1,46 @@
+{
+  "media": {
+    "media_uuid": "08f82d7a-f164-4a7e-8c7f-2abc5bdb4bf2",
+    "checksum": "08e34664f6a69f0f19c6d508e4df27dacc8813618465225c94cd07f25aa5b327",
+    "faces": [
+      {
+        "face_uuid": "4786b537-fe50-11ed-bdb4-0cc47a6c4dbd",
+        "tags": [
+          {
+            "name": "attractive",
+            "value": "yes",
+            "confidence": 0.76
+          },
+
+          {
+            "name": "big nose",
+            "value": "no",
+            "confidence": 1.0
+          },
+          {
+            "name": "black hair",
+            "value": "no",
+            "confidence": 0.98
+          },
+          {
+            "name": "blond hair",
+            "value": "no",
+            "confidence": 0.5
+          },
+          {
+            "name": "brown hair",
+            "value": "yes",
+            "confidence": 1.0
+          },
+          {
+            "name": "gender",
+            "value": "female",
+            "confidence": 1.0
+          }
+        ],
+        "person_id": ""
+      }
+    ]
+  },
+  "recognize": null
+}
