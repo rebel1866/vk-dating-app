@@ -42,5 +42,6 @@ public class UserDto {
     private List<String> career;
     private List<String> photos;
     private int friendsAmount;
-    // TODO: 07/06/2023 lastseen 
+    // TODO: 07/06/2023 lastseen
+    // instagram !!!
 }
