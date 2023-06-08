@@ -6,7 +6,7 @@ import com.melnikov.service.exception.ServiceException;
 import com.melnikov.service.logic.NameService;
 import com.melnikov.service.vo.ApiSearchRequestVo;
 import com.melnikov.service.vo.Zodiac;
-import com.melnikov.util.Random;
+import static com.melnikov.util.Random.getRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -109,7 +109,7 @@ public class NameServiceImpl implements NameService {
         if (nameList.size() == 0) {
             throw new ServiceException("All names have been used");
         }
-        int random = (int) Random.getRandom(0, nameList.size() - 1);
+        int random = (int) getRandom(0, nameList.size() - 1);
         Name name = nameList.get(random);
         List<String> nameBirthDates = name.getBirthDates();
         if (nameBirthDates.size() == allBirthDates.size()) {
@@ -119,7 +119,7 @@ public class NameServiceImpl implements NameService {
         }
         List<String> birthDates = new ArrayList<>(allBirthDates);
         birthDates.removeAll(nameBirthDates);
-        int random2 = (int) Random.getRandom(0, birthDates.size() - 1);
+        int random2 = (int) getRandom(0, birthDates.size() - 1);
         String currentBirthDate = birthDates.get(random2);
         String[] dayMonth = currentBirthDate.split("\\.");
         name.getBirthDates().add(currentBirthDate);
@@ -129,7 +129,7 @@ public class NameServiceImpl implements NameService {
 
     private ApiSearchRequestVo getRequestVoByPreferredZodiacs() throws ServiceException {
         int count = 0;
-        int random = (int) Random.getRandom(0, vacantZodiacDates.size() - 1);
+        int random = (int) getRandom(0, vacantZodiacDates.size() - 1);
         Map.Entry<String, List<String>> entry = null;
         Iterator<Map.Entry<String, List<String>>> iterator = vacantZodiacDates.entrySet().iterator();
         while (iterator.hasNext()) {
@@ -143,7 +143,7 @@ public class NameServiceImpl implements NameService {
             throw new ServiceException("Entry is null");
         }
         List<String> dates = entry.getValue();
-        int random2 = (int) Random.getRandom(0, dates.size() - 1);
+        int random2 = (int) getRandom(0, dates.size() - 1);
         String birthDay = dates.get(random2);
         String [] arr = birthDay.split("\\.");
         List<String> nameBDates = vacantZodiacDates.get(entry.getKey());
