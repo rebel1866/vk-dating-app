@@ -44,4 +44,5 @@ public class UserDto {
     private int friendsAmount;
     // TODO: 07/06/2023 lastseen
     // instagram !!!
+    //userappearance
 }
