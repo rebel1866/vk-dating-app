@@ -64,7 +64,7 @@ public class UserFaceServiceImpl implements UserFaceService {
     }
 
     @Override
-    @Scheduled(fixedDelayString = "${fixedFaceDelay.in.milliseconds}", initialDelay = 20000)
+    @Scheduled(fixedDelayString = "${fixedFaceDelay.in.milliseconds}", initialDelay = 2000)
     public void startFaceIndexing() {
         if (!isFaceIndexingEnabled) {
             return;
@@ -95,13 +95,17 @@ public class UserFaceServiceImpl implements UserFaceService {
                 logger.info("Exception message: " + e.getMessage());
                 return;
             }
-            if (faces.isEmpty()) {
+            if (faces == null || faces.size() == 0) {
                 logger.info("Faces is empty");
-                return;
+                user.setUserAppearance(new UserAppearance());
+                userRepository.save(user);
+                continue;
             }
             boolean isManPresent = isManPresentFilter(faces, user);
             if (isManPresent) {
                 logger.info("man detected on photo - continue iterating");
+                user.setUserAppearance(new UserAppearance());
+                userRepository.save(user);
                 continue;
             }
             UserAppearance userAppearance = new UserAppearance();
@@ -149,7 +153,10 @@ public class UserFaceServiceImpl implements UserFaceService {
     }
 
     private Double findHighestMatchRate(List<Match> matches) {
-        List<Double> result = new ArrayList<>(matches.stream().map(Match::getMatchConfidence).toList());
+        List<Double> result = new ArrayList<>(matches.stream().filter(el -> el.getIsMatch().equals(true)).map(Match::getMatchConfidence).toList());
+        if (result.isEmpty()) {
+            return 0.0;
+        }
         Collections.sort(result);
         return result.get(result.size() - 1);
     }
@@ -197,7 +204,6 @@ public class UserFaceServiceImpl implements UserFaceService {
     private TagVo getTagByName(String name, List<TagVo> tags) {
         return tags.stream().filter(el -> el.getName().equals(name)).findFirst().orElse(null);
     }
-    // TODO: 9.06.23 script addrecognizes
 
     private List<Face> sendUploadRequest(ImageUploadRequest imageUploadRequest) throws ServiceException {
         String json;
