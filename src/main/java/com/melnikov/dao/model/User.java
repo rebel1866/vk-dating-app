@@ -32,4 +32,5 @@ public class User {
     private UserDescription userDescription;
     private List<Photo> photos;
     private int friendsAmount;
+    private UserAppearance userAppearance;
 }

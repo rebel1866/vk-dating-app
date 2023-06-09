@@ -17,6 +17,10 @@ public class JsonParser<T> {
         return objectMapper.readValue(source, typeReference);
     }
 
+    public String marshallJson(T t) throws JsonProcessingException {
+        return objectMapper.writeValueAsString(t);
+    }
+
     public static String getStringValue(String json, String key) throws IOException {
         ObjectNode node = objectMapper.readValue(json, ObjectNode.class);
         JsonNode result = node.findValue(key);

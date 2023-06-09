@@ -14,4 +14,7 @@ public class VkDatingAppConstants {
     public static final String  ACCESS_TOKEN_STANDALONE = "vk1.a.fAST-7hXTS9479OZdg26wUiROopSEidq4UJdUlwNFzqGQg3cPFueMn" +
             "lD7jqVEcRhMwecSF7C7h3dNsIews546cMR16-oxIe5SMnKmJQBFXoqIBf7DR8gwtqLc0a6kW-piN6VMfck8JajS_i7qgyzfnR_3qTBA_zw" +
             "bs9hxt81qqyA4YGRkYHipFVjo-hHY1P9CQugwHL1BW82bC2nM1iVgA";
+
+    public static final String PUBLIC_BETAFACE_API_KEY = "d45fd466-51e2-4701-8da8-04351c872236";
+    public static final String DETECTION_FLAGS = "basicpoints,propoints,classifiers,content";
 }

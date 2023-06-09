@@ -19,4 +19,9 @@ public class ImageUploadRequest {
     private String detectionFlags;
     @JsonProperty("original_filename")
     private String originalFileName;
+
+    public ImageUploadRequest(String apiKey, String detectionFlags) {
+        this.apiKey = apiKey;
+        this.detectionFlags = detectionFlags;
+    }
 }
