@@ -2,17 +2,17 @@ package com.melnikov.service.logic.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.melnikov.dao.model.Match;
+import com.melnikov.dao.model.Recognize;
 import com.melnikov.dao.model.User;
 import com.melnikov.dao.model.UserAppearance;
+import com.melnikov.dao.repository.RecognizeRepository;
 import com.melnikov.dao.repository.UserRepository;
 import com.melnikov.service.constant.VkDatingAppConstants;
 import com.melnikov.service.exception.ServiceException;
 import com.melnikov.service.logic.UserFaceService;
 import com.melnikov.service.vo.HttpResponseVo;
-import com.melnikov.service.vo.betafaceapi.Face;
-import com.melnikov.service.vo.betafaceapi.ImageUploadRequest;
-import com.melnikov.service.vo.betafaceapi.ImageUploadResponseWrapper;
-import com.melnikov.service.vo.betafaceapi.TagVo;
+import com.melnikov.service.vo.betafaceapi.*;
 import com.melnikov.util.JsonParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +22,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -38,18 +40,27 @@ public class UserFaceServiceImpl implements UserFaceService {
     private String priorityCity;
 
     private final UserRepository userRepository;
+    private final RecognizeRepository recognizeRepository;
 
     private final Logger logger = LoggerFactory.getLogger(UserFaceServiceImpl.class);
 
     private final JsonParser<ImageUploadRequest> jsonUploadRequestParser;
     private final JsonParser<ImageUploadResponseWrapper> jsonUploadResponseParser;
+    private final JsonParser<RecognizeRequestVo> jsonRecognizeRequestParser;
+    private final JsonParser<RecognizeResponseVo> jsonRecognizeResponseParser;
 
     @Autowired
-    public UserFaceServiceImpl(UserRepository userRepository, JsonParser<ImageUploadRequest> jsonUploadRequestParser,
-                               JsonParser<ImageUploadResponseWrapper> jsonUploadResponseParser) {
+    public UserFaceServiceImpl(UserRepository userRepository, RecognizeRepository recognizeRepository,
+                               JsonParser<ImageUploadRequest> jsonUploadRequestParser,
+                               JsonParser<ImageUploadResponseWrapper> jsonUploadResponseParser,
+                               JsonParser<RecognizeRequestVo> jsonRecognizeRequestParser,
+                               JsonParser<RecognizeResponseVo> jsonRecognizeResponseParser) {
         this.userRepository = userRepository;
+        this.recognizeRepository = recognizeRepository;
         this.jsonUploadRequestParser = jsonUploadRequestParser;
         this.jsonUploadResponseParser = jsonUploadResponseParser;
+        this.jsonRecognizeRequestParser = jsonRecognizeRequestParser;
+        this.jsonRecognizeResponseParser = jsonRecognizeResponseParser;
     }
 
     @Override
@@ -102,12 +113,62 @@ public class UserFaceServiceImpl implements UserFaceService {
             userAppearance.setAttractivenessConfidence(confidence);
             TagVo blondTag = getTagByName("blond hair", firstFace.getTags());
             userAppearance.setIsBlond(getBoolean(blondTag.getValue()));
-            recognize(userAppearance);
+            try {
+                recognize(userAppearance, firstFace.getFaceUid());
+            } catch (ServiceException e) {
+                logger.info("Error while recognizing: " + e.getMessage());
+            }
             userRepository.save(user);
         }
     }
 
-    private void recognize(UserAppearance userAppearance) {
+    private void recognize(UserAppearance userAppearance, String faceUid) throws ServiceException {
+        RecognizeRequestVo requestVo = new RecognizeRequestVo(VkDatingAppConstants.PUBLIC_BETAFACE_API_KEY);
+        requestVo.setFacesUids(Collections.singletonList(faceUid));
+        List<Recognize> allRecognize = recognizeRepository.findAll();
+        List<String> targets = new ArrayList<>();
+        allRecognize.forEach(el -> targets.add(el.getNameSpace()));
+        requestVo.setTargets(targets);
+        RecognizeResponseVo responseVo = sendRecognizeRequest(requestVo);
+        List<Match> matches = new ArrayList<>();
+        userAppearance.setMatches(matches);
+        responseVo.getResults().get(0).getMatches().forEach(matchVo -> {
+            Match match = new Match();
+            match.setIsMatch(matchVo.getIsMatch());
+            match.setMatchConfidence(matchVo.getConfidence());
+            match.setTargetNameSpace(matchVo.getPersonId());
+            matches.add(match);
+        });
+        userAppearance.setHighestMatchRate(findHighestMatchRate(matches));
+    }
+
+    private Double findHighestMatchRate(List<Match> matches) {
+        List<Double> result = new ArrayList<>(matches.stream().map(Match::getMatchConfidence).toList());
+        Collections.sort(result);
+        return result.get(result.size() - 1);
+    }
+
+    private RecognizeResponseVo sendRecognizeRequest(RecognizeRequestVo requestVo) throws ServiceException {
+        String json;
+        HttpResponseVo responseVo;
+        RecognizeResponseVo response;
+        try {
+            json = jsonRecognizeRequestParser.marshallJson(requestVo);
+        } catch (JsonProcessingException e) {
+            throw new ServiceException("Error while marshalling json (recognize)");
+        }
+        try {
+            responseVo = sendJsonPost("https://www.betafaceapi.com/api/v2/recognize", json);
+        } catch (IOException e) {
+            throw new ServiceException("Error while recognize request");
+        }
+        try {
+            response = jsonRecognizeResponseParser.parseJson(responseVo.getBody(), new TypeReference<>() {
+            });
+        } catch (JsonProcessingException e) {
+            throw new ServiceException("Error while parsing upload image response");
+        }
+        return response;
     }
 
     private Boolean getBoolean(String value) {

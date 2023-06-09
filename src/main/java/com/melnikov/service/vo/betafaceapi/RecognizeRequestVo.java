@@ -18,4 +18,8 @@ public class RecognizeRequestVo {
     @JsonProperty("faces_uuids")
     private List<String> facesUids;
     private List<String> targets;
+
+    public RecognizeRequestVo(String apiKey) {
+        this.apiKey = apiKey;
+    }
 }

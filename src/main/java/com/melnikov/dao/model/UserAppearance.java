@@ -13,4 +13,5 @@ public class UserAppearance {
     private Double attractivenessConfidence;
     private Boolean isBlond;
     private List<Match> matches;
+    private Double highestMatchRate;
 }
