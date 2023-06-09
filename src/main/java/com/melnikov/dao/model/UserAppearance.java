@@ -8,6 +8,7 @@ import java.util.List;
 @Getter
 @Setter
 @Builder
+@ToString
 public class UserAppearance {
     private Boolean isAttractive;
     private Double attractivenessConfidence;

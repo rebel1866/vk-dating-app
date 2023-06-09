@@ -69,6 +69,7 @@ public class UserFaceServiceImpl implements UserFaceService {
         if (!isFaceIndexingEnabled) {
             return;
         }
+        logger.info("Start face indexing");
         int iteration = -1;
         while (true) {
             iteration++;
@@ -92,7 +93,7 @@ public class UserFaceServiceImpl implements UserFaceService {
             } catch (ServiceException e) {
                 logger.info("Exception happened while face scanning, stopping. Iteration: " + iteration);
                 logger.info("Exception message: " + e.getMessage());
-                break;
+                return;
             }
             if (faces.isEmpty()) {
                 logger.info("Faces is empty");
@@ -110,7 +111,11 @@ public class UserFaceServiceImpl implements UserFaceService {
             boolean isAttractive = getBoolean(attractiveTag.getValue());
             Double confidence = attractiveTag.getConfidence();
             userAppearance.setIsAttractive(isAttractive);
-            userAppearance.setAttractivenessConfidence(confidence);
+            if (isAttractive) {
+                userAppearance.setAttractivenessConfidence(confidence);
+            } else {
+                userAppearance.setAttractivenessConfidence(1.0 - confidence);
+            }
             TagVo blondTag = getTagByName("blond hair", firstFace.getTags());
             userAppearance.setIsBlond(getBoolean(blondTag.getValue()));
             try {
@@ -119,6 +124,7 @@ public class UserFaceServiceImpl implements UserFaceService {
                 logger.info("Error while recognizing: " + e.getMessage());
             }
             userRepository.save(user);
+            logger.info(String.format("Saved user face scanning result (user id %s): %s", user.getId(), userAppearance));
         }
     }
 
@@ -166,7 +172,7 @@ public class UserFaceServiceImpl implements UserFaceService {
             response = jsonRecognizeResponseParser.parseJson(responseVo.getBody(), new TypeReference<>() {
             });
         } catch (JsonProcessingException e) {
-            throw new ServiceException("Error while parsing upload image response");
+            throw new ServiceException("Error while parsing recognize response");
         }
         return response;
     }
@@ -189,8 +195,9 @@ public class UserFaceServiceImpl implements UserFaceService {
     }
 
     private TagVo getTagByName(String name, List<TagVo> tags) {
-        return tags.stream().filter(el -> el.getName().equals("gender")).findFirst().orElse(null);
+        return tags.stream().filter(el -> el.getName().equals(name)).findFirst().orElse(null);
     }
+    // TODO: 9.06.23 script addrecognizes
 
     private List<Face> sendUploadRequest(ImageUploadRequest imageUploadRequest) throws ServiceException {
         String json;

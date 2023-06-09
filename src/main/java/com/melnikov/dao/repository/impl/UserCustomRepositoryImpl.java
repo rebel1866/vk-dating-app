@@ -42,6 +42,7 @@ public class UserCustomRepositoryImpl implements UserCustomRepository {
         if (name != null) {
             query.addCriteria(Criteria.where("firstName").regex(name, "i"));
         }
+        // TODO: 9.06.23 sort attractive
         Pageable pageableRequest = PageRequest.of(page, pageSize);
         query.with(pageableRequest);
         query.with(Sort.by(Sort.Direction.DESC, "id"));
