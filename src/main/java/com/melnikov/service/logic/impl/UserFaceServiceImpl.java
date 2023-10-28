@@ -122,11 +122,11 @@ public class UserFaceServiceImpl implements UserFaceService {
             }
             TagVo blondTag = getTagByName("blond hair", firstFace.getTags());
             userAppearance.setIsBlond(getBoolean(blondTag.getValue()));
-            try {
-                recognize(userAppearance, firstFace.getFaceUid());
-            } catch (ServiceException e) {
-                logger.info("Error while recognizing: " + e.getMessage());
-            }
+//            try {
+//                recognize(userAppearance, firstFace.getFaceUid());
+//            } catch (ServiceException e) {
+//                logger.info("Error while recognizing: " + e.getMessage());
+//            }
             userRepository.save(user);
             logger.info(String.format("Saved user face scanning result (user id %s): %s", user.getId(), userAppearance));
         }
@@ -224,6 +224,9 @@ public class UserFaceServiceImpl implements UserFaceService {
             });
         } catch (JsonProcessingException e) {
             throw new ServiceException("Error while parsing upload image response");
+        }
+        if (responseWrapper.getMedia() == null) {
+            throw new ServiceException("Media is null. Response: " + responseVo.getBody());
         }
         return responseWrapper.getMedia().getFaces();
     }

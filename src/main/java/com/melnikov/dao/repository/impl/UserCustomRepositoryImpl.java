@@ -3,6 +3,7 @@ package com.melnikov.dao.repository.impl;
 import com.melnikov.dao.model.User;
 import com.melnikov.dao.repository.UserCustomRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.data.web.SpringDataWebProperties;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -42,10 +43,11 @@ public class UserCustomRepositoryImpl implements UserCustomRepository {
         if (name != null) {
             query.addCriteria(Criteria.where("firstName").regex(name, "i"));
         }
-        // TODO: 9.06.23 sort attractive
         Pageable pageableRequest = PageRequest.of(page, pageSize);
         query.with(pageableRequest);
-        query.with(Sort.by(Sort.Direction.DESC, "id"));
+        Sort sort = Sort.by(new Sort.Order(Sort.Direction.DESC, "userAppearance.isAttractive"),
+                new Sort.Order(Sort.Direction.DESC, "userAppearance.attractivenessConfidence"));
+        query.with(sort);
         query.addCriteria(Criteria.where("hasBeenViewed").is(false));
         return mongoTemplate.find(query, User.class);
     }
