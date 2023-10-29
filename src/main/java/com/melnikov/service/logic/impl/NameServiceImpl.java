@@ -137,6 +137,7 @@ public class NameServiceImpl implements NameService {
                 entry = iterator.next();
                 break;
             }
+            iterator.next();
             count++;
         }
         if (entry == null) {
