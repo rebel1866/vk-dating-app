@@ -252,7 +252,7 @@ birthDates:[],
 isUsed:false
 },
 {
-name:"Валентина,
+name:"Валентина",
 birthDates:[],
 isUsed:false
 },
@@ -483,7 +483,6 @@ isUsed:false
 name:"Сабина",
 birthDates:[],
 isUsed:false
-}
 }
 
 ]);
