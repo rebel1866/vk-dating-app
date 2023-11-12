@@ -2,6 +2,7 @@ package com.melnikov.service.logic.impl;
 
 import com.melnikov.dao.model.Name;
 import com.melnikov.dao.repository.NameRepository;
+import com.melnikov.service.dto.StatisticNames;
 import com.melnikov.service.exception.ServiceException;
 import com.melnikov.service.logic.NameService;
 import com.melnikov.service.vo.ApiSearchRequestVo;
@@ -48,6 +49,16 @@ public class NameServiceImpl implements NameService {
         for (Name name : nameList) {
             vacantZodiacDates.put(name.getName(), getVacantZodiacDatesForName(name));
         }
+    }
+
+    public StatisticNames getStatisticForNamesNames() {
+        List<Name> allNames = nameRepository.findAll();
+        int allBirthDates = allNames.size() * 365;
+        int usedBirthDates = 0;
+        for (Name name : allNames) {
+            usedBirthDates = usedBirthDates + name.getBirthDates().size();
+        }
+        return new StatisticNames(usedBirthDates / allBirthDates);
     }
     private List<String> getVacantZodiacDatesForName(Name name) {
         List<String> birthDatesForName = name.getBirthDates();

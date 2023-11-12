@@ -9,6 +9,7 @@ import com.melnikov.dao.repository.ClosedUserRepository;
 import com.melnikov.dao.repository.UserCustomRepository;
 import com.melnikov.dao.repository.UserRepository;
 import com.melnikov.service.constant.VkDatingAppConstants;
+import com.melnikov.service.dto.Statistic;
 import com.melnikov.service.dto.UserDto;
 import com.melnikov.service.exception.ServiceException;
 import com.melnikov.service.logic.NameService;
@@ -17,6 +18,7 @@ import com.melnikov.service.vo.*;
 import com.melnikov.util.DateUtil;
 
 import static com.melnikov.util.HttpClient.sendPOST;
+
 import com.melnikov.util.JsonParser;
 import com.melnikov.util.ThreadPool;
 import com.melnikov.util.converter.UserModelToDtoConverter;
@@ -506,7 +508,6 @@ public class UserServiceImpl implements UserService {
     }
 
 
-
     @Override
     public boolean checkTokenValid(String token) {
         String response;
@@ -547,5 +548,10 @@ public class UserServiceImpl implements UserService {
         if (response.contains("error")) {
             throw new ServiceException("Could not add user to favorites.");
         }
+    }
+
+    @Override
+    public Statistic getStatistic() {
+        return new Statistic(nameService.getStatisticForNamesNames());
     }
 }

@@ -1,11 +1,17 @@
 package com.melnikov.controller;
 
 import com.melnikov.controller.exception.ControllerException;
+import com.melnikov.service.dto.Statistic;
 import com.melnikov.service.dto.UserDto;
 import com.melnikov.service.exception.ServiceException;
 import com.melnikov.service.logic.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Collections;
 import java.util.List;
@@ -91,6 +97,11 @@ public class UserController {
             return Collections.singletonMap("response", "valid");
         }
         return Collections.singletonMap("response", "not_valid");
+    }
+
+    @GetMapping("/statistic")
+    private Statistic getStatistic(){
+        return userService.getStatistic();
     }
 
     // TODO: 9.06.23 getMatches

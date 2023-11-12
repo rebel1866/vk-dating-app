@@ -1,5 +1,6 @@
 package com.melnikov.service.logic;
 
+import com.melnikov.service.dto.Statistic;
 import com.melnikov.service.dto.UserDto;
 import com.melnikov.service.exception.ServiceException;
 
@@ -23,4 +24,6 @@ public interface UserService {
 
 
     void addVkFavorite(Long id) throws ServiceException;
+
+    Statistic getStatistic();
 }
