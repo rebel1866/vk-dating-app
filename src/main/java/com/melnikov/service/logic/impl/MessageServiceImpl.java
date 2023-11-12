@@ -1,10 +1,13 @@
 package com.melnikov.service.logic.impl;
 
 import com.melnikov.dao.model.Phrase;
+import com.melnikov.dao.model.User;
 import com.melnikov.dao.repository.PhraseRepository;
+import com.melnikov.dao.repository.UserRepository;
 import com.melnikov.service.constant.VkDatingAppConstants;
 import com.melnikov.service.exception.ServiceException;
 import com.melnikov.service.logic.MessageService;
+import com.melnikov.service.logic.UserService;
 import com.melnikov.util.HttpClient;
 import com.melnikov.util.JsonParser;
 import com.melnikov.util.Random;
@@ -19,10 +22,15 @@ import java.util.Map;
 @Service
 public class MessageServiceImpl implements MessageService {
     private PhraseRepository phraseRepository;
+    private UserRepository userRepository;
 
     @Autowired
     public void setPhraseRepository(PhraseRepository phraseRepository) {
         this.phraseRepository = phraseRepository;
+    }
+    @Autowired
+    public void setUserRepository(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -86,6 +94,10 @@ public class MessageServiceImpl implements MessageService {
         } catch (IOException e) {
             throw new ServiceException("Could not send message to user with id: " + id);
         }
+        userRepository.findById(id).ifPresent(user -> {
+            user.setHasBeenAdded(true);
+            userRepository.save(user);
+        });
         handleError(response, "Error adding friend. Reason unknown. User id: ", id);
     }
 

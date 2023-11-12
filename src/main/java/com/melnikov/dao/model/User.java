@@ -27,6 +27,7 @@ public class User {
     private Boolean canSendFriendRequest;
     private LocalDateTime savingTime;
     private Boolean hasBeenViewed;
+    private Boolean hasBeenAdded;
     private Boolean isVkFavorite;
     private Boolean isApplicationFavorite;
     private UserDescription userDescription;
