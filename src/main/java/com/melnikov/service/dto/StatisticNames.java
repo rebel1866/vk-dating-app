@@ -12,5 +12,5 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class StatisticNames {
-    private Integer usedNamesPercent;
+    private Double usedNamesPercent;
 }

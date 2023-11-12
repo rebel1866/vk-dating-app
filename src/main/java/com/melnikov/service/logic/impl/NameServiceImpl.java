@@ -53,12 +53,12 @@ public class NameServiceImpl implements NameService {
 
     public StatisticNames getStatisticForNamesNames() {
         List<Name> allNames = nameRepository.findAll();
-        int allBirthDates = allNames.size() * 365;
-        int usedBirthDates = 0;
+        double allBirthDates = allNames.size() * 365;
+        double usedBirthDates = 0;
         for (Name name : allNames) {
             usedBirthDates = usedBirthDates + name.getBirthDates().size();
         }
-        return new StatisticNames(usedBirthDates / allBirthDates);
+        return new StatisticNames((usedBirthDates / allBirthDates) * 100);
     }
     private List<String> getVacantZodiacDatesForName(Name name) {
         List<String> birthDatesForName = name.getBirthDates();
