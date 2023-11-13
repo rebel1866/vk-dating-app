@@ -8,6 +8,8 @@ import com.melnikov.service.logic.NameService;
 import com.melnikov.service.vo.ApiSearchRequestVo;
 import com.melnikov.service.vo.Zodiac;
 import static com.melnikov.util.Random.getRandom;
+
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,11 +42,12 @@ public class NameServiceImpl implements NameService {
 
     private void initZodiacs() {
         zodiacList = new ArrayList<>();
+        vacantZodiacDates = new HashMap<>();
+        if(StringUtils.isBlank(zodiacs)) return;
         Arrays.stream(zodiacs.split(",")).map(String::trim).forEach(zodiac -> {
             Zodiac zodiacObj = Zodiac.valueOf(zodiac.toUpperCase());
             zodiacList.add(zodiacObj);
         });
-        vacantZodiacDates = new HashMap<>();
         List<Name> nameList = nameRepository.findByIsUsed(false);
         for (Name name : nameList) {
             vacantZodiacDates.put(name.getName(), getVacantZodiacDatesForName(name));
